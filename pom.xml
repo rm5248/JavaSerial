@@ -1,0 +1,45 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>com.rm5248</groupId>
+  <artifactId>JavaSerial</artifactId>
+  <version>0.5-SNAPSHOT</version>
+  <description>A cross-platform way of accessing serial ports through Java.  Supports Windows and Linux.  Does not use the Java SerialAPI.  Implementation uses the java.io API.</description>
+  <build>
+    <sourceDirectory>src</sourceDirectory>
+    <plugins>
+      <plugin>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <version>3.1</version>
+        <configuration>
+          <source/>
+          <target/>
+        </configuration>
+      </plugin>
+    </plugins>
+    <resources>
+    	<resource>
+    		<directory>NativeCode</directory>
+    		<includes>
+    			<include>Linux/**</include>
+    			<include>Windows/**</include>
+    		</includes>
+    	</resource>
+    </resources>
+  </build>
+  <url>http://programming.rm5248.com/</url>
+  <name>Java Serial</name>
+  <licenses>
+    <license>
+      <name>Apache License, Version 2.0</name>
+      <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+      <distribution>repo</distribution>
+    </license>
+  </licenses>
+  <scm>
+  	<url>http://svn.rm5248.com/prog_utils/trunk/JavaSerial/</url>
+  	<connection>svn</connection>
+  </scm>
+  <issueManagement>
+  	<url>http://programming.rm5248.com/</url>
+  </issueManagement>
+</project>
