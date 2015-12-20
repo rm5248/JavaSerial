@@ -2,7 +2,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.rm5248</groupId>
     <artifactId>JavaSerial</artifactId>
-    <version>0.7-SNAPSHOT</version>
+    <version>0.6.1</version>
     <description>A cross-platform way of accessing serial ports through Java.  Supports Windows and Linux.  Does not use the Java SerialAPI.  Implementation uses the java.io API.</description>
   
     <distributionManagement>
@@ -129,7 +129,7 @@
         <url>https://github.com/rm5248/JavaSerial</url>
         <connection>scm:git:https://github.com/rm5248/JavaSerial.git</connection>
         <developerConnection>scm:git:git@github.com:rm5248/JavaSerial.git</developerConnection>
-      <tag>HEAD</tag>
+      <tag>JavaSerial-0.6.1</tag>
   </scm>
     
     <issueManagement>
