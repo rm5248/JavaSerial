@@ -126,8 +126,9 @@
     </licenses>
     
     <scm>
-        <url>https://github.com/rm5248/JavaSerial.git</url>
-        <connection>git</connection>
+        <url>https://github.com/rm5248/JavaSerial</url>
+        <connection>scm:git:https://github.com/rm5248/JavaSerial.git</connection>
+        <developerConnection>scm:git:git@github.com:rm5248/JavaSerial.git</developerConnection>
     </scm>
     
     <issueManagement>
