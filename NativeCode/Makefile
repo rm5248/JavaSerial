@@ -56,22 +56,46 @@ SOURCEFILES =	$(H_FILES) $(CPP_FILES) $(C_FILES) $(S_FILES)
 .PRECIOUS:	$(SOURCEFILES)
 OBJFILES =	SerialPortImpl.o 
 
-JNI_INCLUDE_DIR = /usr/lib/jvm/java-7-openjdk-amd64/include
+JNI_INCLUDE_DIR_LINUX = /usr/lib/jvm/jdk-8-oracle-x64/include
+JNI_INCLUDE_DIR_MAC = /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.11.sdk/System/Library/Frameworks/JavaVM.framework/Versions/Current/Headers
 JNI_INCLUDE_DIR_WIN=C:\Program Files (x86)\Java\jdk1.6.0_18\include
+
+ifeq ($(OS),Windows_NT)
+	.DEFAULT_GOAL := windows
+	JNI_INCLUDE_DIR=$(JNI_INCLUDE_DIR_WIN)
+	ifeq ($(PROCESSOR_ARCHITECTURE,AMD64))
+	endif
+else
+	UNAME_S := $(shell uname -s)
+	JNI_INCLUDE_DIR=$(JNI_INCLUDE_DIR_LINUX)
+	.DEFAULT_GOAL := linux
+	ifeq ($(UNAME_S),Darwin)
+		.DEFAULT_GOAL := mac
+		JNI_INCLUDE_DIR=$(JNI_INCLUDE_DIR_MAC)
+	endif
+endif
 
 #
 # Main targets
 #
-linux: SerialPortImpl.o
-	$(CC) -o libjavaserial.so $(ARCH) -shared -Wl,-soname,libjavaserial.so -I$(JNI_INCLUDE_DIR) -I$(JNI_INCLUDE_DIR)/linux -lc $(OBJFILES)
+main:
+
+mac: $(OBJFILES)
+	$(CC) -dynamiclib -o libjavaserial.jnilib $(OBJFILES) 
+	cp libjavaserial.jnilib Mac/amd64
+
+linux: $(OBJFILES)
+	$(CC) -o libjavaserial.so $(ARCH) -shared -Wl,-soname,libjavaserial.so -I$(JNI_INCLUDE_DIR_LINUX) -I$(JNI_INCLUDE_DIR)/linux -lc $(OBJFILES)
 
 linux-32:
 	$(MAKE) ARCH="-m32"
+
 linux-64:
 	$(MAKE) ARCH="-m64"
 
 windows:
 	cl -I"$(JNI_INCLUDE_DIR_WIN)" -I"$(JNI_INCLUDE_DIR_WIN)\win32" -I"." -MT -LD SerialPortImpl.c -Fejavaserial.dll
+
 #
 # Dependencies
 #

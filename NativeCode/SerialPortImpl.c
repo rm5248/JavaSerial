@@ -1644,7 +1644,7 @@ JNIEXPORT jint JNICALL Java_com_rm5248_serial_SerialPort_getMajorNativeVersion
  */
 JNIEXPORT jint JNICALL Java_com_rm5248_serial_SerialPort_getMinorNativeVersion
   (JNIEnv * env, jclass cls){
-	return 5;
+	return 6;
 }
 
 /*
@@ -1661,7 +1661,11 @@ JNIEXPORT jobjectArray JNICALL Java_com_rm5248_serial_SerialPort_getSerialPorts
 	int x;
 	
 	port_names_size = 0;
-	port_names = malloc( sizeof( char* ) * 255 ); //max 255 serial ports
+	/* Note: max of 255 serial ports on windows, however mac and linux
+	 * can have many more than that.  So we allocate enough for 512 
+	 * ports
+	 */
+	port_names = malloc( sizeof( char* ) * 512 ); //max 512 serial ports
 #ifdef _WIN32
 	{
 		//Brute force, baby!
@@ -1705,7 +1709,7 @@ JNIEXPORT jobjectArray JNICALL Java_com_rm5248_serial_SerialPort_getSerialPorts
 				fprintf( stderr, "WARNING: Ignoring file %s, filename too long\n", entry->d_name );
 				continue;
 			}
-			fd = open( deviceName, O_RDONLY );
+			fd = open( deviceName, O_RDONLY | O_NONBLOCK );
 			if( fd < 0 ){
 				switch( errno ){
 					case EACCES:
@@ -1723,7 +1727,7 @@ JNIEXPORT jobjectArray JNICALL Java_com_rm5248_serial_SerialPort_getSerialPorts
 				continue;
 			}
 			
-			if( isatty( fd ) && port_names_size < 255 ){
+			if( isatty( fd ) && port_names_size < 512 ){
 				port_names[ port_names_size ] = malloc( strlen( entry->d_name ) + 6 );
 				memcpy( port_names[ port_names_size ], "/dev/", 5 );
 				memcpy( port_names[ port_names_size ] + 5, entry->d_name, strlen( entry->d_name ) + 1 );
