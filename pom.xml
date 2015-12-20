@@ -145,5 +145,6 @@
             <roles>
                 <role>Main Developer</role>
             </roles>
+        </developer>
     </developers>
 </project>
