@@ -49,8 +49,8 @@ import java.util.logging.Logger;
  * use a special version, there are two Java properties to set.
  *
  * <p>
- * <
- * pre>
+ * 
+ * <pre>
  * com.rm5248.javaserial.lib.path - give the directory name that the JNI code is
  * located in com.rm5248.javaserial.lib.name - explicitly give the name of the
  * library(the default is 'javaserial')
