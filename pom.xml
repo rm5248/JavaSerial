@@ -135,4 +135,15 @@
     <issueManagement>
         <url>https://github.com/rm5248/JavaSerial/issues</url>
     </issueManagement>
+    
+    <developers>
+        <developer>
+            <email>robert.middleton@rm5248.com</email>
+            <id>rm5248</id>
+            <name>Robert Middleton</name>
+            <url>http://www.rm5248.com</url>
+            <roles>
+                <role>Main Developer</role>
+            </roles>
+    </developers>
 </project>
