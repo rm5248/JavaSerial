@@ -2,6 +2,8 @@ package com.rm5248.serial;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * Okay, so the problem here is that we need to be continually reading from the serial port,
@@ -15,6 +17,8 @@ import java.io.InputStream;
  *
  */
 class BufferedSerialInputStream extends InputStream implements Runnable {
+    
+    private final static Logger logger = Logger.getLogger( BufferedSerialInputStream.class.getName() );
 
 	private SerialInputStream stream;
 	private byte[] buffer;
@@ -22,14 +26,16 @@ class BufferedSerialInputStream extends InputStream implements Runnable {
 	private int bufferEnd;
 	private SerialPort callback;
 	private IOException exceptionToThrow;
+        private volatile boolean interruptCausesIOException;
 
 	BufferedSerialInputStream( SerialInputStream s, SerialPort serialPort ){
 		stream = s;
-		buffer = new byte[ 500 ];
+		buffer = new byte[ 512 ];
 		bufferBegin = 0;
 		bufferEnd = 0;
 		this.callback = serialPort;
 		exceptionToThrow = null;
+                interruptCausesIOException = false;
 	}
 
 	@Override
@@ -44,28 +50,50 @@ class BufferedSerialInputStream extends InputStream implements Runnable {
 				bufferBegin = 0;
 			}
 		}else{
-			synchronized( buffer ){
-				try {
-					buffer.wait();
-				} catch (InterruptedException e) {
-					e.printStackTrace();
-				}
-				
-				if( exceptionToThrow != null ){
-					throw exceptionToThrow;
-				}
-			}
-			
-			byteToReturn = buffer[ bufferBegin++ ];
-			if( bufferBegin >= buffer.length ){
-				//wrap around to the start of the array
-				bufferBegin = 0;
-			}
+			byteToReturn = awaitFromBuffer();
 		}
 		
 		return byteToReturn;
 	}
+        
+    private int awaitFromBuffer() throws IOException {
+        int byteToReturn;
 
+        while( true ){
+            synchronized( buffer ){
+                try {
+                    buffer.wait();
+                } catch ( InterruptedException e ){
+                    if( interruptCausesIOException ){
+                        logger.log( Level.FINER, "Got InterruptedException, re-throwing as IOException" );
+                        throw new IOException( e );
+                    }
+                    
+                    logger.log( Level.FINER, "Got InterruptedException, ignoring and re-trying to read" );
+                    continue;
+                }
+
+                if( exceptionToThrow != null ){
+                    throw exceptionToThrow;
+                }
+
+                break;
+            }
+        }
+
+        byteToReturn = buffer[bufferBegin++];
+        if (bufferBegin >= buffer.length) {
+            //wrap around to the start of the array
+            bufferBegin = 0;
+        }
+        
+        return byteToReturn;
+    }
+
+    void setInterruptCausesIOException( boolean causeInterrupt ){
+        this.interruptCausesIOException = causeInterrupt;
+    }
+    
 	@Override
 	public void run() {
 		while( true ){

@@ -1,9 +1,6 @@
 #ifdef _WIN32
 	#include <windows.h>
 	
-	/* Make inline functions work */
-	#define inline __inline
-	
 	#define SPEED_SWITCH(SPD,io) case SPD: io.BaudRate = CBR_##SPD; break;
 	#define GET_SPEED_SWITCH(SPD,io) case CBR_##SPD: return SPD;
 	
@@ -70,6 +67,7 @@
 struct port_descriptor{
 #ifdef _WIN32
 	HANDLE port;
+	HANDLE in_use;
 #else
 	int port;
 	/* There appears to be a case where we can free() the port_descriptor
@@ -77,6 +75,9 @@ struct port_descriptor{
 	 * This means that we segfault on the FD_SET() call.
 	 * This mutex will keep us alive until we have exited the 
 	 * readByte() call.
+	 *
+	 * This also ensures that all current calls into the native code are
+	 * finished by the time doClose() returns.
 	 */
 	pthread_mutex_t in_use;
 #endif
@@ -98,7 +99,7 @@ int winRTS = 0;
 //
 // Helper Methods
 //
-static inline jint get_handle(JNIEnv * env, jobject obj){
+static jint get_handle(JNIEnv * env, jobject obj){
 	jfieldID fid;
 	jint array_pos;
 	jclass cls = (*env)->GetObjectClass( env, obj );
@@ -113,7 +114,7 @@ static inline jint get_handle(JNIEnv * env, jobject obj){
 	return array_pos;
 }
 
-static inline jboolean get_bool( JNIEnv* env, jobject obj, const char* name ){
+static jboolean get_bool( JNIEnv* env, jobject obj, const char* name ){
 	jfieldID fid;
 	jboolean boolVal;
 	jclass cls = (*env)->GetObjectClass( env, obj );
@@ -128,7 +129,7 @@ static inline jboolean get_bool( JNIEnv* env, jobject obj, const char* name ){
 	return boolVal;
 }
 
-static inline int set_baud_rate( struct port_descriptor* desc, int baud_rate ){
+static int set_baud_rate( struct port_descriptor* desc, int baud_rate ){
 	GET_SERIAL_PORT_STRUCT( desc->port, newio );
 
 	switch( baud_rate ){
@@ -165,7 +166,7 @@ static inline int set_baud_rate( struct port_descriptor* desc, int baud_rate ){
 	return 1;
 }
 
-static inline int set_raw_input( struct port_descriptor* desc ){
+static int set_raw_input( struct port_descriptor* desc ){
 	GET_SERIAL_PORT_STRUCT( desc->port, newio );
 
 #ifdef _WIN32
@@ -209,7 +210,7 @@ static inline int set_raw_input( struct port_descriptor* desc ){
 /**
  * @param data_bits The number of data bits
  */
-static inline int set_data_bits( struct port_descriptor* desc, int data_bits ){
+static int set_data_bits( struct port_descriptor* desc, int data_bits ){
 	GET_SERIAL_PORT_STRUCT( desc->port, newio );
 
 #ifdef _WIN32 
@@ -235,7 +236,7 @@ static inline int set_data_bits( struct port_descriptor* desc, int data_bits ){
 /**
  * @param stop_bits 1 for 1, 2 for 2
  */
-static inline int set_stop_bits( struct port_descriptor* desc, int stop_bits ){
+static int set_stop_bits( struct port_descriptor* desc, int stop_bits ){
 	GET_SERIAL_PORT_STRUCT( desc->port, newio );
 
 #ifdef _WIN32 
@@ -260,7 +261,7 @@ static inline int set_stop_bits( struct port_descriptor* desc, int stop_bits ){
 /**
  * @param parity 0 for no parity, 1 for odd parity, 2 for even parity
  */
-static inline int set_parity( struct port_descriptor* desc, int parity ){
+static int set_parity( struct port_descriptor* desc, int parity ){
 	GET_SERIAL_PORT_STRUCT( desc->port, newio );
 
 #ifdef _WIN32 
@@ -291,7 +292,7 @@ static inline int set_parity( struct port_descriptor* desc, int parity ){
 /**
  * @param flow_control 0 for none, 1 for hardware, 2 for software
  */
-static inline int set_flow_control( struct port_descriptor* desc, int flow_control ){
+static int set_flow_control( struct port_descriptor* desc, int flow_control ){
 	GET_SERIAL_PORT_STRUCT( desc->port, newio );
 
 #ifdef _WIN32
@@ -328,7 +329,7 @@ static inline int set_flow_control( struct port_descriptor* desc, int flow_contr
 	return 1;
 }
 
-static inline void throw_io_exception( JNIEnv * env, int errorNumber ){
+static void throw_io_exception( JNIEnv * env, int errorNumber ){
 #ifdef _WIN32
 	LPTSTR error_text = NULL;
 	jclass exception_class;
@@ -355,7 +356,7 @@ static inline void throw_io_exception( JNIEnv * env, int errorNumber ){
 #endif /* _WIN32 */
 }
 
-static inline void throw_io_exception_message( JNIEnv * env, const char* message ){
+static void throw_io_exception_message( JNIEnv * env, const char* message ){
 	jclass exception_class;
 	(*env)->ExceptionDescribe( env );
 	(*env)->ExceptionClear( env );
@@ -363,7 +364,7 @@ static inline void throw_io_exception_message( JNIEnv * env, const char* message
 	(*env)->ThrowNew(env, exception_class, message );
 }
 
-static inline struct port_descriptor* get_port_descriptor( JNIEnv* env, jobject obj ){
+static struct port_descriptor* get_port_descriptor( JNIEnv* env, jobject obj ){
 	int array_pos;
 	struct port_descriptor* desc;
 	
@@ -485,6 +486,19 @@ JNIEXPORT jint JNICALL Java_com_rm5248_serial_SerialPort_openPort
 			free( new_port );
 			return -1;
 		}
+	}
+	
+	//initialize the mutex
+	new_port->in_use = CreateMutex( NULL, FALSE, NULL );
+	if( new_port->in_use == NULL ){
+		LPTSTR error_text = NULL;
+		jclass exception_class;
+		(*env)->ExceptionDescribe( env );
+		(*env)->ExceptionClear( env );
+		exception_class = (*env)->FindClass(env, "com/rm5248/serial/NotASerialPortException");
+		(*env)->ThrowNew(env, exception_class, "UNABLE TO CREATE MUTEX(use better msg)" );
+		free( new_port );
+		return -1;
 	}
 	
 #else
@@ -719,12 +733,22 @@ JNIEXPORT void JNICALL Java_com_rm5248_serial_SerialPort_doClose
 		throw_io_exception_message( env, "Unable to get descriptor" ); 
 		return; 
 	}
-	
+
+#ifdef _WIN32
+	{
+		HANDLE tmpHandle = desc->port;
+		desc->port = INVALID_HANDLE_VALUE;
+		CloseHandle( tmpHandle );
+	}
+	WaitForSingleObject( desc->in_use, INFINITE );
+	ReleaseMutex( desc->in_use );
+	CloseHandle( desc->in_use );
+#else
 	close( desc->port );
-#ifndef _WIN32
 	pthread_mutex_lock( &(desc->in_use) );
 	pthread_mutex_unlock( &(desc->in_use) );
 #endif
+
 	free( port_list[ array_pos ] );
 	port_list[ array_pos ] = NULL;
 }
@@ -1228,6 +1252,7 @@ JNIEXPORT jint JNICALL Java_com_rm5248_serial_SerialInputStream_readByte
 		}
 	}
 	
+	WaitForSingleObject( desc->in_use, INFINITE );
 	if( !current_available ){
 		//If nothing is currently available, wait until we get an event of some kind.
 		//This could be the serial lines changing state, or it could be some data
@@ -1244,11 +1269,16 @@ JNIEXPORT jint JNICALL Java_com_rm5248_serial_SerialInputStream_readByte
 	if( ret & EV_RXCHAR ){
 		if( !ReadFile( desc->port, &ret_val, 1, &stat, &overlap) ){
 			throw_io_exception( env, GetLastError() );
+			ReleaseMutex( desc->in_use );
 			return -1;
 		}
 		
 		//This is a valid byte, set our valid bit
 		ret_val |= ( 0x01 << 15 );
+	}else if( ret == 0 && desc->port == INVALID_HANDLE_VALUE ){
+		//the port was closed
+		ReleaseMutex( desc->in_use );
+		return -1;
 	}
 	
 	//Always get the com lines no matter what	
@@ -1279,6 +1309,8 @@ JNIEXPORT jint JNICALL Java_com_rm5248_serial_SerialInputStream_readByte
 		// Ring Indicator
 		ret_val |= ( 0x01 << 14 );
 	}
+	
+	ReleaseMutex( desc->in_use );
 	
 #else
 
@@ -1466,12 +1498,15 @@ JNIEXPORT jint JNICALL Java_com_rm5248_serial_SimpleSerialInputStream_readByte
 	ret_val = 0;
 
 #ifdef _WIN32
+	WaitForSingleObject( desc->in_use, INFINITE );
+
 	{
 		DWORD comErrors = {0};
 		COMSTAT portStatus = {0};
 		if( !ClearCommError( desc->port, &comErrors, &portStatus ) ){
 			//return value zero = fail
 			throw_io_exception( env, GetLastError() );
+			ReleaseMutex( desc->in_use );
 			return -1;
 		}else{
 			current_available = portStatus.cbInQue;
@@ -1494,9 +1529,19 @@ JNIEXPORT jint JNICALL Java_com_rm5248_serial_SimpleSerialInputStream_readByte
 	if( ret & EV_RXCHAR ){
 		if( !ReadFile( desc->port, &ret_val, 1, &stat, &overlap) ){
 			throw_io_exception( env, GetLastError() );
+			ReleaseMutex( desc->in_use );
 			return -1;
 		}
+	}else if( ret == 0 && desc->port == INVALID_HANDLE_VALUE ){
+		//the port was closed
+		ret_val = -1;
+	}else if( ret == 0 ){
+		//some unknown error occured
+		throw_io_exception( env, GetLastError() );
+		ret_val = -1;
 	}
+	
+	ReleaseMutex( desc->in_use );
 #else
 	pthread_mutex_lock( &(desc->in_use) );
 	stat = read( desc->port, &ret_val, 1 );
@@ -1644,7 +1689,7 @@ JNIEXPORT jint JNICALL Java_com_rm5248_serial_SerialPort_getMajorNativeVersion
  */
 JNIEXPORT jint JNICALL Java_com_rm5248_serial_SerialPort_getMinorNativeVersion
   (JNIEnv * env, jclass cls){
-	return 6;
+	return 7;
 }
 
 /*

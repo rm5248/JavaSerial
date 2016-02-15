@@ -98,6 +98,7 @@ public class SerialPort{
         if( nativeLibraryPath != null ){
             logger.log( Level.FINE, "Native library path of {0} provided", nativeLibraryPath );
             File libToLoad = new File( nativeLibraryPath, nativeLibraryName );
+            logger.log( Level.FINE, "Loading library {0}", libToLoad.getAbsolutePath() );
             System.load( libToLoad.getAbsolutePath() );
             return;
         }
@@ -312,7 +313,7 @@ public class SerialPort{
     /* Cache of the last gotten serial line state */
     private volatile SerialLineState state;
     /* The input stream that user code uses to read from the serial port. */
-    private InputStream inputStream;
+    private SimpleSerialInputStream simpleSerialInputStream;
     /* The buffered serial input stream which filters out events for us. */
     private BufferedSerialInputStream bis;
     /* The output stream that user code uses to write to the serial port. */
@@ -323,6 +324,8 @@ public class SerialPort{
     private Object serialListenSync;
     /* Depending on what control line changes we want to get back, this mask is set. */
     private int controlLineFlags;
+    /* Flag to determine if we want an InputStream.read() to throw an IOException when interrupted */
+    private boolean throwIOExceptionOnInterrupt;
 
     /**
      * Open the specified port, 9600 baud, 8 data bits, 1 stop bit, no parity,
@@ -391,10 +394,11 @@ public class SerialPort{
             this.handle = openPort( portName );
             this.portName = portName;
             if( controlLineFlags == NO_CONTROL_LINE_CHANGE ){
-                inputStream = new SimpleSerialInputStream( handle );
+                logger.log( Level.FINE, "Creating a new SimpleSerialInputStream - not monitoring for control line change" );
+                simpleSerialInputStream = new SimpleSerialInputStream( handle );
             } else{
+                logger.log( Level.FINE, "Creating a new BufferedSerialInputStream - monitoring for control line change" );
                 SerialInputStream sis = new SerialInputStream( handle );
-                inputStream = sis;
                 bis = new BufferedSerialInputStream( sis, this );
             }
             outputStream = new SerialOutputStream( handle );
@@ -622,6 +626,7 @@ public class SerialPort{
         SerialInputStream sis;
 
         this.handle = -1;
+        throwIOExceptionOnInterrupt = false;
 
         //Check for null values in our arguments
         if( portName == null ){
@@ -765,10 +770,11 @@ public class SerialPort{
 
         handle = openPort( portName, myRate, myData, myStop, myParity, myFlow );
         if( controlLineFlags == NO_CONTROL_LINE_CHANGE ){
-            inputStream = new SimpleSerialInputStream( handle );
+            logger.log( Level.FINE, "Creating a new SimpleSerialInputStream - not monitoring for control line change" );
+            simpleSerialInputStream = new SimpleSerialInputStream( handle );
         } else{
+            logger.log( Level.FINE, "Creating a new BufferedSerialInputStream - monitoring for control line change" );
             sis = new SerialInputStream( handle );
-            inputStream = sis;
             bis = new BufferedSerialInputStream( sis, this );
         }
         outputStream = new SerialOutputStream( handle );
@@ -905,11 +911,41 @@ public class SerialPort{
             throw new IllegalStateException( "Cannot get the input stream once the port has been closed." );
         }
 
-        if( controlLineFlags == NO_CONTROL_LINE_CHANGE ){
-            return inputStream;
+        if( bis != null ){
+            return bis;
         }
+        
+        if( simpleSerialInputStream != null ){
+            return simpleSerialInputStream;
+        }
+        
+        logger.log( Level.SEVERE, "Tried to get input stream, but both BufferedSerialInputStream and SimpleSerialInputStream null" );
 
-        return bis;
+        return null;
+    }
+    
+    /**
+     * Set if using Thread.interrupt() will throw an IO exception.
+     * 
+     * <b>Note:</b> This is OS and implementation-specific.  Depending on how the serial port
+     * is opened, this value may have no effect. 
+     * 
+     * This will work in the following situations:
+     * <ul>
+     * <li>Opening a serial port, monitoring the serial lines(e.g. NO_SERIAL_LINE_CHANGE was not passed to the constructor)</li>
+     * </ul>
+     * 
+     * 
+     * @param interruptCausesIOException 
+     */
+    public void setInterruptCausesIOException( boolean interruptCausesIOException ){
+        this.throwIOExceptionOnInterrupt = interruptCausesIOException;
+        if( bis != null ){
+            bis.setInterruptCausesIOException( interruptCausesIOException );
+        }else if( simpleSerialInputStream != null ){
+            
+        }
+        
     }
 
     /**
@@ -1472,7 +1508,7 @@ public class SerialPort{
      * 0.2, this returns 2.
      */
     public static int getMinorVersion(){
-        return 6;
+        return 7;
     }
 
     /**
