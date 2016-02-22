@@ -25,6 +25,7 @@
 	#include <pthread.h>
 	#include <sys/ioctl.h>
 	#include <errno.h>
+	#include <poll.h>
 
 	#ifndef ENOMEDIUM
 	#define ENOMEDIUM ENODEV
@@ -61,6 +62,10 @@
 #include "com_rm5248_serial_SerialOutputStream.h"
 #include "com_rm5248_serial_SimpleSerialInputStream.h"
 
+// log levels
+#define MESSAGE_DEBUG 0 /* java.util.logging FINE - log4j2 DEBUG */
+#define MESSAGE_TRACE 1 /* java.util.logging FINER - log4j2 TRACE */
+
 //
 // Struct Definitions
 //
@@ -92,13 +97,77 @@ static int port_list_size;
 #ifdef _WIN32
 //Unfortunately, Windows does not let us get the state of the DTR/RTS lines.
 //So, we need to keep track of that manually.  
-int winDTR = 0;
-int winRTS = 0;
+static int winDTR = 0;
+static int winRTS = 0;
 #endif
 
 //
 // Helper Methods
 //
+static void output_to_stderr( char* message ){
+	fflush( stdout );	
+	fflush( stderr );
+	fprintf( stderr, "%s", message );
+	fflush( stdout );	
+	fflush( stderr );
+}
+
+static void log_message( int log_level, JNIEnv * env, char* message ){
+	jobject log_obj;
+	jclass serial_class;
+	jclass logger_class;
+	jfieldID logger_id;
+	jmethodID log_method_id;
+	jstring debug_string;
+
+	logger_class = (*env)->FindClass( env, "java/util/logging/Logger" );
+	if( logger_class == NULL ){
+		output_to_stderr( "ERROR: Can't find java logger?\n" );
+		return;
+	}
+
+	serial_class = (*env)->FindClass( env, "com/rm5248/serial/SerialPort" );
+	if( serial_class == NULL ){
+		output_to_stderr( "ERROR: Can't find serial port class?!\n" );
+		return;
+	}
+
+	logger_id = (*env)->GetStaticFieldID( env, serial_class, "native_logger", "Ljava/util/logging/Logger;" );
+	if( logger_id == NULL ){
+		output_to_stderr( "ERROR: Can't find native_logger?!\n" );
+		return;
+	}
+	
+
+	log_obj = (*env)->GetStaticObjectField( env, serial_class, logger_id );
+	if( log_obj == NULL ){
+		output_to_stderr( "ERROR: Can't do logging?!\n" );
+		return;
+	}
+
+	if( log_level == MESSAGE_DEBUG ){
+		log_method_id = (*env)->GetMethodID( env, logger_class, "fine", "(Ljava/lang/String;)V" );
+	}else if( log_level == MESSAGE_TRACE ){
+		log_method_id = (*env)->GetMethodID( env, logger_class, "finer", "(Ljava/lang/String;)V" );
+	}else{
+		output_to_stderr( "PROGRAMMING ERROR: invalid log level provided\n" );
+		return;
+	}
+
+	if( log_method_id == NULL ){
+		output_to_stderr( "ERROR: Can't find 'fine' method on java.util.logging.Logger\n" );
+		return;
+	}
+
+	debug_string = (*env)->NewStringUTF( env, message );
+	if( debug_string == NULL ){
+		output_to_stderr( "ERROR: can't constuct string\n" );
+		return;
+	}
+
+	(*env)->CallVoidMethod( env, log_obj, log_method_id, debug_string );
+}
+
 static jint get_handle(JNIEnv * env, jobject obj){
 	jfieldID fid;
 	jint array_pos;
@@ -402,6 +471,7 @@ JNIEXPORT jint JNICALL Java_com_rm5248_serial_SerialPort_openPort
 	port_to_open = (*env)->GetStringUTFChars( env, port, &iscopy );
 
 	if( port_list == NULL ){
+		log_message( MESSAGE_TRACE, env, "First port opened: allocating 10 port_descriptors" );
 		port_list = malloc( sizeof( struct port_descriptor* ) * 10 );
 		port_list_size = 10;
 		for( list_pos = 0; list_pos < port_list_size; ++list_pos ){
@@ -421,6 +491,8 @@ JNIEXPORT jint JNICALL Java_com_rm5248_serial_SerialPort_openPort
 		//no free slots.  Expand our array by 10 elements
 		struct port_descriptor** tmpPortDesc;
 		tmpPortDesc = malloc( sizeof( struct port_descriptor* ) * ( port_list_size + 10 ) );
+
+		log_message( MESSAGE_TRACE, env, "No free slots found: expanding port_descirptor array by 10 elements" );
 
 		//put all elements into the new array
 		for( list_pos = 0; list_pos < port_list_size; ++list_pos ){
@@ -560,7 +632,7 @@ JNIEXPORT jint JNICALL Java_com_rm5248_serial_SerialPort_openPort
 	//Only set the new_port to be in our array as the last instruction
 	//If there are any errors, we will have returned long before this
 	port_list[ list_pos ] = new_port;
-	
+
 	return list_pos;
 }
 
@@ -580,6 +652,7 @@ JNIEXPORT jint JNICALL Java_com_rm5248_serial_SerialPort_openPort__Ljava_lang_St
 	port_to_open = (*env)->GetStringUTFChars( env, port, &iscopy );
 
 	if( port_list == NULL ){
+		log_message( MESSAGE_TRACE, env, "First port opened: allocating 10 port_descriptors" );
 		port_list = malloc( sizeof( struct port_descriptor* ) * 10 );
 		port_list_size = 10;
 		for( list_pos = 0; list_pos < port_list_size; ++list_pos ){
@@ -599,6 +672,8 @@ JNIEXPORT jint JNICALL Java_com_rm5248_serial_SerialPort_openPort__Ljava_lang_St
 		//no free slots.  Expand our array by 10 elements
 		struct port_descriptor** tmpPortDesc;
 		tmpPortDesc = malloc( sizeof( struct port_descriptor* ) * ( port_list_size + 10 ) );
+
+		log_message( MESSAGE_TRACE, env, "No free slots found: expanding port_descirptor array by 10 elements" );
 
 		//put all elements into the new array
 		for( list_pos = 0; list_pos < port_list_size; ++list_pos ){
@@ -744,7 +819,11 @@ JNIEXPORT void JNICALL Java_com_rm5248_serial_SerialPort_doClose
 	ReleaseMutex( desc->in_use );
 	CloseHandle( desc->in_use );
 #else
-	close( desc->port );
+	{
+		int tmpFd = desc->port;
+		desc->port = -1;
+		close( tmpFd );
+	}
 	pthread_mutex_lock( &(desc->in_use) );
 	pthread_mutex_unlock( &(desc->in_use) );
 #endif
@@ -1337,12 +1416,22 @@ JNIEXPORT jint JNICALL Java_com_rm5248_serial_SerialInputStream_readByte
 	}
 	
 	while( 1 ){
+		if( desc->port == -1 ){
+			pthread_mutex_unlock( &(desc->in_use) );
+			return -1;
+		}
 		FD_ZERO( &fdset );
 		FD_SET( desc->port, &fdset );
 		timeout.tv_sec = 0;
 		timeout.tv_usec = 10000; // 10,000 microseconds = 10ms
 
 		selectStatus = select( desc->port + 1, &fdset, NULL, NULL, &timeout );
+		if( desc->port == -1 ){
+			//check to see if the port is closed
+			pthread_mutex_unlock( &(desc->in_use) );
+			return -1;
+		}
+
 		if( selectStatus < 0 ){
 			int errval;
 			if( errno == EBADF ){
@@ -1544,6 +1633,30 @@ JNIEXPORT jint JNICALL Java_com_rm5248_serial_SimpleSerialInputStream_readByte
 	ReleaseMutex( desc->in_use );
 #else
 	pthread_mutex_lock( &(desc->in_use) );
+	//do a polll() on the FD.
+	//we need to do this so that if we close() our FD from a different thread,
+	//this function will actually return.
+	do{
+		struct pollfd pollfds;
+		pollfds.fd = desc->port;
+		pollfds.events = POLLIN | POLLERR | POLLNVAL;
+		stat = poll( &pollfds, 1, 100 );
+		if( stat < 0 ){
+			throw_io_exception( env, errno );
+			pthread_mutex_unlock( &(desc->in_use) );
+			return -1;
+		}else if( stat > 0 ){
+			break;
+		}
+	}while( 1 );
+
+
+	if( desc->port == -1 ){
+		//EOF
+		pthread_mutex_unlock( &(desc->in_use) );
+		return -1;
+	}
+
 	stat = read( desc->port, &ret_val, 1 );
 	if( stat < 0 ){
 		throw_io_exception( env, errno );

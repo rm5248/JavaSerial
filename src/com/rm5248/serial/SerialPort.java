@@ -63,6 +63,8 @@ import java.util.logging.Logger;
 public class SerialPort{
 
     private final static Logger logger = Logger.getLogger( SerialPort.class.getName() );
+    /* Native logger.  Don't remove this! The JNI needs to access it */
+    private final static Logger native_logger = Logger.getLogger( SerialPort.class.getName() + ".native" );
 
     //The first time this class is referenced, we need to load the library.
     static{

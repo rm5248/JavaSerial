@@ -41,7 +41,7 @@ COMPILE.cc = $(CXX) $(CXXFLAGS) $(CPPFLAGS) -c
 ########## Default flags (redefine these with a header.mak file if desired)
 CPPFLAGS = 	-DPIC -I$(JNI_INCLUDE_DIR) -I$(JNI_INCLUDE_DIR)/linux
 CXXFLAGS =	
-CFLAGS =	-fPIC -Wall $(ARCH)
+CFLAGS =	-fPIC -Wall $(ARCH) -O2
 CLIBFLAGS =	-lm 
 CCLIBFLAGS =	
 ########## End of default flags
