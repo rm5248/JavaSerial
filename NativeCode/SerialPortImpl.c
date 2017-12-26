@@ -73,6 +73,10 @@ struct port_descriptor{
 #ifdef _WIN32
 	HANDLE port;
 	HANDLE in_use;
+	//Unfortunately, Windows does not let us get the state of the DTR/RTS lines.
+	//So, we need to keep track of that manually.  
+	int winDTR;
+	int winRTS;
 #else
 	int port;
 	/* There appears to be a case where we can free() the port_descriptor
@@ -93,13 +97,6 @@ struct port_descriptor{
 //
 static struct port_descriptor** port_list = NULL;
 static int port_list_size;
-
-#ifdef _WIN32
-//Unfortunately, Windows does not let us get the state of the DTR/RTS lines.
-//So, we need to keep track of that manually.  
-static int winDTR = 0;
-static int winRTS = 0;
-#endif
 
 //
 // Helper Methods
@@ -512,6 +509,8 @@ JNIEXPORT jint JNICALL Java_com_rm5248_serial_SerialPort_openPort
 
 	//Now, let's get to the actual opening of our port
 #ifdef _WIN32
+	new_port->winDTR = 0;
+	new_port->winRTS = 0;
 	{
 		//GOD DAMN IT WINDOWS http://support.microsoft.com/kb/115831
 		char* special_port = malloc( strlen( port_to_open ) + 5 );
@@ -1160,11 +1159,11 @@ JNIEXPORT jint JNICALL Java_com_rm5248_serial_SerialPort_getSerialLineStateInter
 			ret_val |= ( 0x01 << 2 );
 		}
 		
-		if( winDTR ){
+		if( desc->winDTR ){
 			ret_val |= ( 0x01 << 3 );
 		}
 		
-		if( winRTS ){
+		if( desc->winRTS ){
 			ret_val |= ( 0x01 << 4 );
 		}
 		
@@ -1237,13 +1236,13 @@ JNIEXPORT jint JNICALL Java_com_rm5248_serial_SerialPort_setSerialLineStateInter
 			throw_io_exception_message( env, "Could not set DTR" );
 			return -1;
 		}
-		winDTR = 1;
+		desc->winDTR = 1;
 	}else{
 		if( !EscapeCommFunction( desc->port, CLRDTR ) ){
 			throw_io_exception_message( env, "Could not set DTR" );
 			return -1;
 		}
-		winDTR = 0;
+		desc->winDTR = 0;
 	}
 
 	if( get_bool( env, serial, "requestToSend" ) ){
@@ -1251,13 +1250,13 @@ JNIEXPORT jint JNICALL Java_com_rm5248_serial_SerialPort_setSerialLineStateInter
 			throw_io_exception_message( env, "Could not set RTS" );
 			return -1;
 		}
-		winRTS = 1;
+		desc->winRTS = 1;
 	}else{
 		if( !EscapeCommFunction( desc->port, CLRRTS ) ){
 			throw_io_exception_message( env, "Could not set RTS" );
 			return -1;
 		}
-		winRTS = 0;
+		desc->winRTS = 0;
 	}
 #else
 	int toSet = 0;
@@ -1376,11 +1375,11 @@ JNIEXPORT jint JNICALL Java_com_rm5248_serial_SerialInputStream_readByte
 		ret_val |= ( 0x01 << 11 );
 	}
 	
-	if( winDTR ){
+	if( desc->winDTR ){
 		ret_val |= ( 0x01 << 12 );
 	}
 	
-	if( winRTS ){
+	if( desc->winRTS ){
 		ret_val |= ( 0x01 << 13 );
 	}
 		
