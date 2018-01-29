@@ -1510,7 +1510,7 @@ public class SerialPort{
      * 0.2, this returns 2.
      */
     public static int getMinorVersion(){
-        return 7;
+        return 8;
     }
 
     /**
