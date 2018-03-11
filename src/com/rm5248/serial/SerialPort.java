@@ -60,7 +60,7 @@ import java.util.logging.Logger;
  * @author rm5248
  *
  */
-public class SerialPort{
+public class SerialPort implements AutoCloseable {
 
     private final static Logger logger = Logger.getLogger( SerialPort.class.getName() );
     /* Native logger.  Don't remove this! The JNI needs to access it */
