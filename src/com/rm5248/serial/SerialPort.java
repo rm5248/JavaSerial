@@ -143,7 +143,7 @@ public class SerialPort implements AutoCloseable {
             String fileToExtract = "/" + osName + "/" + arch + "/" + nativeLibraryName;
             logger.log( Level.FINER, "About to extract {0} from JAR", fileToExtract );
             //now let's extract the proper library
-            library = SerialPort.class.getClass().getResourceAsStream( fileToExtract );
+            library = SerialPort.class.getResourceAsStream( fileToExtract );
             Files.copy( library, extractedLib.toPath() );
             extractedLib.deleteOnExit();
 
