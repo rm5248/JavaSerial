@@ -1719,7 +1719,8 @@ JNIEXPORT void JNICALL Java_com_rm5248_serial_SerialOutputStream_writeByte
 	}
 #else
 	bytes_written = write( desc->port, &byte_write, sizeof( byte_write ) );
-	if( bytes_written < 0 ){
+	if( bytes_written < 0 || 
+            bytes_written != sizeof( byte_write) ){
 		//throw new exception
 		throw_io_exception( env, errno );
 		return;
@@ -1741,7 +1742,9 @@ JNIEXPORT void JNICALL Java_com_rm5248_serial_SerialOutputStream_writeByteArray
 	DWORD bytes_written;
 	OVERLAPPED overlap;
 #else
-	int bytes_written;
+	int bytes_written = 0;
+	int offset = 0;
+	int rc;
 #endif /* _WIN32 */
 
 	desc = get_port_descriptor( env, obj );
@@ -1768,10 +1771,16 @@ JNIEXPORT void JNICALL Java_com_rm5248_serial_SerialOutputStream_writeByteArray
 	}
 	
 #else
-	bytes_written = write( desc->port, data, len );
-	if( bytes_written < 0 ){
-		throw_io_exception( env, errno );
-	}
+
+	do{
+		rc = write( desc->port, data + offset, len - bytes_written );
+		if( rc < 0 ){
+			throw_io_exception( env, errno );
+			break;
+		}
+		bytes_written += rc;
+		offset += rc;
+	}while( bytes_written < len );
 #endif /* _WIN32 */
 
 	(*env)->ReleaseByteArrayElements(env, arr, data, 0);
