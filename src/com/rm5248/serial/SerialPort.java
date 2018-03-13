@@ -49,7 +49,7 @@ import java.util.logging.Logger;
  * use a special version, there are two Java properties to set.
  *
  * <p>
- * 
+ *
  * <pre>
  * com.rm5248.javaserial.lib.path - give the directory name that the JNI code is
  * located in com.rm5248.javaserial.lib.name - explicitly give the name of the
@@ -93,7 +93,7 @@ public class SerialPort implements AutoCloseable {
                 //mac uses jnilib instead of dylib for some reason
                 nativeLibraryName = nativeLibraryName.replace( "dylib", "jnilib" );
             }
-            logger.log( Level.FINE, "No native library name provided, using default of {0}", 
+            logger.log( Level.FINE, "No native library name provided, using default of {0}",
                     nativeLibraryName);
         }
 
@@ -191,37 +191,49 @@ public class SerialPort implements AutoCloseable {
         /**
          * Not available in Windows
          */
-        B0,
+        B0(0),
         /**
          * Not available in Windows
          */
-        B50,
+        B50(50),
         /**
          * Not available in Windows
          */
-        B75,
-        B110,
+        B75(75),
+        B110(110),
         /**
          * Not available in Windows
          */
-        B134,
+        B134(134),
         /**
          * Not available in Windows
          */
-        B150,
-        B200,
-        B300,
-        B600,
-        B1200,
+        B150(150),
+        B200(200),
+        B300(300),
+        B600(600),
+        B1200(1200),
         /**
          * Not available in Windows
          */
-        B1800,
-        B2400,
-        B4800,
-        B9600,
-        B38400,
-        B115200
+        B1800(1800),
+        B2400(2400),
+        B4800(4800),
+        B9600(9600),
+        B19200(19200),
+        B38400(38400),
+        B115200(115200)
+        ;
+
+        private final int m_baudRate;
+
+        BaudRate( int baud ){
+            m_baudRate = baud;
+        }
+
+        public int getBaudRate(){
+            return m_baudRate;
+        }
     }
 
     /**
@@ -654,7 +666,7 @@ public class SerialPort implements AutoCloseable {
         if( flow == null ){
             throw new IllegalArgumentException( "flow must not be null" );
         }
-        
+
         logger.log( Level.INFO, "Opening up serial port {0} with the following settings: "
                 + "speed:{1} data:{2} stop:{3} parity:{4} flow:{5}",
                 new Object[] {
@@ -663,7 +675,7 @@ public class SerialPort implements AutoCloseable {
                     data,
                     stop,
                     parity,
-                    flow 
+                    flow
                 });
 
         //Okay, looks like we're good!
@@ -713,6 +725,9 @@ public class SerialPort implements AutoCloseable {
                 break;
             case B9600:
                 myRate = 9600;
+                break;
+            case B19200:
+                myRate = 19200;
                 break;
             case B38400:
                 myRate = 38400;
@@ -916,38 +931,38 @@ public class SerialPort implements AutoCloseable {
         if( bis != null ){
             return bis;
         }
-        
+
         if( simpleSerialInputStream != null ){
             return simpleSerialInputStream;
         }
-        
+
         logger.log( Level.SEVERE, "Tried to get input stream, but both BufferedSerialInputStream and SimpleSerialInputStream null" );
 
         return null;
     }
-    
+
     /**
      * Set if using Thread.interrupt() will throw an IO exception.
-     * 
+     *
      * <b>Note:</b> This is OS and implementation-specific.  Depending on how the serial port
-     * is opened, this value may have no effect. 
-     * 
+     * is opened, this value may have no effect.
+     *
      * This will work in the following situations:
      * <ul>
      * <li>Opening a serial port, monitoring the serial lines(e.g. NO_SERIAL_LINE_CHANGE was not passed to the constructor)</li>
      * </ul>
-     * 
-     * 
-     * @param interruptCausesIOException 
+     *
+     *
+     * @param interruptCausesIOException
      */
     public void setInterruptCausesIOException( boolean interruptCausesIOException ){
         this.throwIOExceptionOnInterrupt = interruptCausesIOException;
         if( bis != null ){
             bis.setInterruptCausesIOException( interruptCausesIOException );
         }else if( simpleSerialInputStream != null ){
-            
+
         }
-        
+
     }
 
     /**
@@ -1118,67 +1133,19 @@ public class SerialPort implements AutoCloseable {
      */
     public BaudRate getBaudRate(){
         int baudRate;
-        BaudRate toReturn;
 
         if( closed ){
             throw new IllegalStateException( "Cannot get the baud rate once the port has been closed." );
         }
 
         baudRate = getBaudRateInternal();
-        toReturn = BaudRate.B0;
-
-        switch( baudRate ){
-            case 0:
-                toReturn = BaudRate.B0;
-                break;
-            case 50:
-                toReturn = BaudRate.B50;
-                break;
-            case 75:
-                toReturn = BaudRate.B75;
-                break;
-            case 110:
-                toReturn = BaudRate.B110;
-                break;
-            case 134:
-                toReturn = BaudRate.B134;
-                break;
-            case 150:
-                toReturn = BaudRate.B150;
-                break;
-            case 200:
-                toReturn = BaudRate.B200;
-                break;
-            case 300:
-                toReturn = BaudRate.B300;
-                break;
-            case 600:
-                toReturn = BaudRate.B600;
-                break;
-            case 1200:
-                toReturn = BaudRate.B1200;
-                break;
-            case 1800:
-                toReturn = BaudRate.B1800;
-                break;
-            case 2400:
-                toReturn = BaudRate.B2400;
-                break;
-            case 4800:
-                toReturn = BaudRate.B4800;
-                break;
-            case 9600:
-                toReturn = BaudRate.B9600;
-                break;
-            case 38400:
-                toReturn = BaudRate.B38400;
-                break;
-            case 115200:
-                toReturn = BaudRate.B115200;
-                break;
+        for( BaudRate b : BaudRate.values() ){
+            if( b.getBaudRate() == baudRate ){
+                return b;
+            }
         }
 
-        return toReturn;
+        return BaudRate.B0;
     }
 
     /**
