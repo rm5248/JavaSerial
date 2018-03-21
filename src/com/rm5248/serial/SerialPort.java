@@ -241,36 +241,80 @@ public class SerialPort implements AutoCloseable {
      * is 8-bit characters.
      */
     public enum DataBits{
-        DATABITS_5,
-        DATABITS_6,
-        DATABITS_7,
-        DATABITS_8
+        DATABITS_5(5),
+        DATABITS_6(6),
+        DATABITS_7(7),
+        DATABITS_8(8)
+        ;
+        
+        private final int m_dataBits;
+        
+        DataBits( int dataBits ){
+            m_dataBits = dataBits;
+        }
+        
+        public int getDataBits(){
+            return m_dataBits;
+        }
     }
 
     /**
      * The number of stop bits for data. Typically this is 1.
      */
     public enum StopBits{
-        STOPBITS_1,
-        STOPBITS_2
+        STOPBITS_1(1),
+        STOPBITS_2(2)
+        ;
+        
+        private final int m_stopBits;
+        
+        StopBits( int stopBits ){
+            m_stopBits = stopBits;
+        }
+        
+        public int getStopBits(){
+            return m_stopBits;
+        }
     }
 
     /**
      * The parity bit for the data. Typically None.
      */
     public enum Parity{
-        NONE,
-        EVEN,
-        ODD
+        NONE(0),
+        ODD(1),
+        EVEN(2)
+        ;
+        
+        private final int m_parity;
+        
+        Parity( int parity ){
+            m_parity = parity;
+        }
+        
+        public int getParity(){
+            return m_parity;
+        }
     }
 
     /**
      * The Flow control scheme for the data, typically None.
      */
     public enum FlowControl{
-        NONE,
-        HARDWARE,
-        SOFTWARE
+        NONE(0),
+        HARDWARE(1),
+        SOFTWARE(2)
+        ;
+        
+        private final int m_flowControl;
+        
+        FlowControl( int flowControl ){
+            m_flowControl = flowControl;
+        }
+        
+        public int getFlowControl(){
+            return m_flowControl;
+        }
     }
 
     /**
@@ -630,11 +674,6 @@ public class SerialPort implements AutoCloseable {
      */
     private void doOpenSerialPort(String portName, BaudRate rate, DataBits data, StopBits stop, Parity parity, FlowControl flow, int controlFlags)
             throws NoSuchPortException, NotASerialPortException{
-        int myRate = 0;
-        int myData = 0;
-        int myStop = 0;
-        int myParity = 0;
-        int myFlow = 0;
         SerialLineState s;
         int state;
         SerialInputStream sis;
@@ -683,109 +722,12 @@ public class SerialPort implements AutoCloseable {
         closed = false;
         this.controlLineFlags = controlFlags;
 
-        switch( rate ){
-            case B0:
-                myRate = 0;
-                break;
-            case B50:
-                myRate = 50;
-                break;
-            case B75:
-                myRate = 75;
-                break;
-            case B110:
-                myRate = 110;
-                break;
-            case B134:
-                myRate = 134;
-                break;
-            case B150:
-                myRate = 150;
-                break;
-            case B200:
-                myRate = 200;
-                break;
-            case B300:
-                myRate = 300;
-                break;
-            case B600:
-                myRate = 600;
-                break;
-            case B1200:
-                myRate = 1200;
-                break;
-            case B1800:
-                myRate = 1800;
-                break;
-            case B2400:
-                myRate = 2400;
-                break;
-            case B4800:
-                myRate = 4800;
-                break;
-            case B9600:
-                myRate = 9600;
-                break;
-            case B19200:
-                myRate = 19200;
-                break;
-            case B38400:
-                myRate = 38400;
-                break;
-            case B115200:
-                myRate = 115200;
-                break;
-        }
-
-        switch( data ){
-            case DATABITS_5:
-                myData = 5;
-                break;
-            case DATABITS_6:
-                myData = 6;
-                break;
-            case DATABITS_7:
-                myData = 7;
-                break;
-            case DATABITS_8:
-                myData = 8;
-                break;
-        }
-
-        switch( stop ){
-            case STOPBITS_1:
-                myStop = 1;
-                break;
-            case STOPBITS_2:
-                myStop = 2;
-                break;
-        }
-
-        switch( parity ){
-            case NONE:
-                myParity = 0;
-                break;
-            case ODD:
-                myParity = 1;
-                break;
-            case EVEN:
-                myParity = 2;
-                break;
-        }
-
-        switch( flow ){
-            case NONE:
-                myFlow = 0;
-                break;
-            case HARDWARE:
-                myFlow = 1;
-                break;
-            case SOFTWARE:
-                myFlow = 2;
-                break;
-        }
-
-        handle = openPort( portName, myRate, myData, myStop, myParity, myFlow );
+        handle = openPort( portName, 
+                rate.getBaudRate(), 
+                data.getDataBits(), 
+                stop.getStopBits(), 
+                parity.getParity(), 
+                flow.getFlowControl() );
         if( controlLineFlags == NO_CONTROL_LINE_CHANGE ){
             logger.log( Level.FINE, "Creating a new SimpleSerialInputStream - not monitoring for control line change" );
             simpleSerialInputStream = new SimpleSerialInputStream( handle );
@@ -831,8 +773,6 @@ public class SerialPort implements AutoCloseable {
      * @param rate
      */
     public void setBaudRate(BaudRate rate){
-        int myRate = 0;
-
         if( closed ){
             throw new IllegalStateException( "Cannot set the BaudRate once the port has been closed." );
         }
@@ -841,58 +781,7 @@ public class SerialPort implements AutoCloseable {
             throw new IllegalArgumentException( "rate must not be null" );
         }
 
-        switch( rate ){
-            case B0:
-                myRate = 0;
-                break;
-            case B50:
-                myRate = 50;
-                break;
-            case B75:
-                myRate = 75;
-                break;
-            case B110:
-                myRate = 110;
-                break;
-            case B134:
-                myRate = 134;
-                break;
-            case B150:
-                myRate = 150;
-                break;
-            case B200:
-                myRate = 200;
-                break;
-            case B300:
-                myRate = 300;
-                break;
-            case B600:
-                myRate = 600;
-                break;
-            case B1200:
-                myRate = 1200;
-                break;
-            case B1800:
-                myRate = 1800;
-                break;
-            case B2400:
-                myRate = 2400;
-                break;
-            case B4800:
-                myRate = 4800;
-                break;
-            case B9600:
-                myRate = 9600;
-                break;
-            case B38400:
-                myRate = 38400;
-                break;
-            case B115200:
-                myRate = 115200;
-                break;
-        }
-
-        setBaudRate( myRate );
+        setBaudRate( rate.getBaudRate() );
     }
 
     public boolean isClosed(){
@@ -982,8 +871,6 @@ public class SerialPort implements AutoCloseable {
      * @param stop
      */
     public void setStopBits(StopBits stop){
-        int myStop = 0;
-
         if( closed ){
             throw new IllegalStateException( "Cannot set the StopBits once the port has been closed." );
         }
@@ -992,16 +879,7 @@ public class SerialPort implements AutoCloseable {
             throw new IllegalArgumentException( "stop must not be null" );
         }
 
-        switch( stop ){
-            case STOPBITS_1:
-                myStop = 1;
-                break;
-            case STOPBITS_2:
-                myStop = 2;
-                break;
-        }
-
-        setStopBits( myStop );
+        setStopBits( stop.getStopBits() );
     }
 
     /**
@@ -1010,8 +888,6 @@ public class SerialPort implements AutoCloseable {
      * @param data
      */
     public void setDataSize(DataBits data){
-        int myData = 0;
-
         if( closed ){
             throw new IllegalStateException( "Cannot set the DataBits once the port has been closed." );
         }
@@ -1020,22 +896,7 @@ public class SerialPort implements AutoCloseable {
             throw new IllegalArgumentException( "data must not be null" );
         }
 
-        switch( data ){
-            case DATABITS_5:
-                myData = 5;
-                break;
-            case DATABITS_6:
-                myData = 6;
-                break;
-            case DATABITS_7:
-                myData = 7;
-                break;
-            case DATABITS_8:
-                myData = 8;
-                break;
-        }
-
-        setCharSize( myData );
+        setCharSize( data.getDataBits() );
     }
 
     /**
@@ -1044,8 +905,6 @@ public class SerialPort implements AutoCloseable {
      * @param parity
      */
     public void setParity(Parity parity){
-        int myParity = 0;
-
         if( closed ){
             throw new IllegalStateException( "Cannot set the parity once the port has been closed." );
         }
@@ -1054,19 +913,7 @@ public class SerialPort implements AutoCloseable {
             throw new IllegalArgumentException( "parity must not be null" );
         }
 
-        switch( parity ){
-            case NONE:
-                myParity = 0;
-                break;
-            case ODD:
-                myParity = 1;
-                break;
-            case EVEN:
-                myParity = 2;
-                break;
-        }
-
-        setParity( myParity );
+        setParity( parity.getParity() );
     }
 
     /**
@@ -1155,31 +1002,20 @@ public class SerialPort implements AutoCloseable {
      */
     public DataBits getDataBits(){
         int dataBits;
-        DataBits bits;
 
         if( closed ){
             throw new IllegalStateException( "Cannot get the data bits once the port has been closed." );
         }
 
         dataBits = getCharSizeInternal();
-        bits = DataBits.DATABITS_8;
-
-        switch( dataBits ){
-            case 8:
-                bits = DataBits.DATABITS_8;
-                break;
-            case 7:
-                bits = DataBits.DATABITS_7;
-                break;
-            case 6:
-                bits = DataBits.DATABITS_6;
-                break;
-            case 5:
-                bits = DataBits.DATABITS_5;
-                break;
+        
+        for( DataBits d : DataBits.values() ){
+            if( dataBits == d.getDataBits() ){
+                return d;
+            }
         }
 
-        return bits;
+        return DataBits.DATABITS_8;
     }
 
     /**
@@ -1189,25 +1025,20 @@ public class SerialPort implements AutoCloseable {
      */
     public StopBits getStopBits(){
         int stopBits;
-        StopBits bits;
 
         if( closed ){
             throw new IllegalStateException( "Cannot get stop bits once the port has been closed." );
         }
 
         stopBits = getStopBitsInternal();
-        bits = StopBits.STOPBITS_1;
-
-        switch( stopBits ){
-            case 1:
-                bits = StopBits.STOPBITS_1;
-                break;
-            case 2:
-                bits = StopBits.STOPBITS_2;
-                break;
+        for( StopBits sb : StopBits.values() ){
+            if( sb.getStopBits() == stopBits ){
+                return sb;
+            }
         }
-
-        return bits;
+        
+        
+        return StopBits.STOPBITS_1;
     }
 
     /**
@@ -1217,28 +1048,19 @@ public class SerialPort implements AutoCloseable {
      */
     public Parity getParity(){
         int parity;
-        Parity par;
 
         if( closed ){
             throw new IllegalStateException( "Cannot get the parity once the port has been closed." );
         }
 
         parity = getParityInternal();
-        par = Parity.NONE;
-
-        switch( parity ){
-            case 0:
-                par = Parity.NONE;
-                break;
-            case 1:
-                par = Parity.ODD;
-                break;
-            case 2:
-                par = Parity.EVEN;
-                break;
+        for( Parity par : Parity.values() ){
+            if( par.getParity() == parity ){
+                return par;
+            }
         }
-
-        return par;
+        
+        return Parity.NONE;
     }
 
     /**
@@ -1248,28 +1070,19 @@ public class SerialPort implements AutoCloseable {
      */
     public FlowControl getFlowControl(){
         int flowControl;
-        FlowControl cont;
 
         if( closed ){
             throw new IllegalStateException( "Cannot get the flow once the port has been closed." );
         }
 
         flowControl = getFlowControlInternal();
-        cont = FlowControl.NONE;
-
-        switch( flowControl ){
-            case 0:
-                cont = FlowControl.NONE;
-                break;
-            case 1:
-                cont = FlowControl.HARDWARE;
-                break;
-            case 2:
-                cont = FlowControl.SOFTWARE;
-                break;
+        for( FlowControl control : FlowControl.values() ){
+            if( control.getFlowControl() == flowControl ){
+                return control;
+            }
         }
-
-        return cont;
+        
+        return FlowControl.NONE;
     }
 
     /**
@@ -1281,18 +1094,8 @@ public class SerialPort implements AutoCloseable {
         if( closed ){
             throw new IllegalStateException( "Cannot set flow once the port has been closed." );
         }
-
-        switch( flow ){
-            case HARDWARE:
-                setFlowControl( 1 );
-                break;
-            case NONE:
-                setFlowControl( 0 );
-                break;
-            case SOFTWARE:
-                setFlowControl( 2 );
-                break;
-        }
+        
+        setFlowControl( flow.getFlowControl() );
     }
 
     /**
