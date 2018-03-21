@@ -1280,7 +1280,7 @@ public class SerialPort implements AutoCloseable {
      * 0.2, this returns 2.
      */
     public static int getMinorVersion(){
-        return 8;
+        return 9;
     }
 
     /**

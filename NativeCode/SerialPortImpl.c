@@ -1810,7 +1810,7 @@ JNIEXPORT jint JNICALL Java_com_rm5248_serial_SerialPort_getMajorNativeVersion
  */
 JNIEXPORT jint JNICALL Java_com_rm5248_serial_SerialPort_getMinorNativeVersion
   (JNIEnv * env, jclass cls){
-	return 8;
+	return 9;
 }
 
 /*
