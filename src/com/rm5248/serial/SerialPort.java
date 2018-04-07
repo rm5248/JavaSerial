@@ -50,9 +50,9 @@ import java.util.logging.Logger;
  *
  * <p>
  *
- * <pre>
- * com.rm5248.javaserial.lib.path - give the directory name that the JNI code is
- * located in com.rm5248.javaserial.lib.name - explicitly give the name of the
+ * {@code com.rm5248.javaserial.lib.path} - give the directory name that the JNI code is
+ * located in <br/>
+ * {@code com.rm5248.javaserial.lib.name} - explicitly give the name of the
  * library(the default is 'javaserial')
  * </pre>
  *
@@ -1328,7 +1328,7 @@ public class SerialPort implements AutoCloseable {
      * Get an array of all the serial ports on the system. For example, on
      * Windows this will return {@code { "COM1", "COM3", .... } } depending on
      * how many serial devices you have plugged in. On Linux, this returns
-	 * {@code { "/dev/ttyS0", "/dev/ttyUSB0", "/dev/symlink", ... } }
+     * {@code { "/dev/ttyS0", "/dev/ttyUSB0", "/dev/symlink", ... } }
      * It will not resolve symlinks, such that if there is a symlink from {@code /dev/symlink
      * } to {@code /dev/ttyUSB0 }, they will both show up.
      * </p>

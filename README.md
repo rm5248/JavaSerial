@@ -22,7 +22,7 @@ The easiest way is to use [Apache Maven]( http://maven.apache.org/ ), and add it
 <dependency>
     <groupId>com.rm5248</groupId>
     <artifactId>JavaSerial</artifactId>
-    <version>0.7</version>
+    <version>0.9</version>
 </dependency>
 ```
 However, you may also download the JARs and add them manually to your project if you so desire.  The latest versions may be downloaded [here]( http://programming.rm5248.com/releases/JavaSerial/latest/ ).  No other dependencies are required.
@@ -44,6 +44,8 @@ public class SerialTest {
             System.err.println( "Oh no!  That port doesn't exist!" );
         } catch (NotASerialPortException e) {
             System.err.println( "Oh no!  That's not a serial port!" );
+        } catch (IOException e) {
+            System.err.println( "An IOException occured" );
         }
  
     }
@@ -94,5 +96,5 @@ Advantages of JavaSerial:
 * No external dependencies
 
 Disadvantages of JavaSerial:
-* No locking of the serial port - There's no portable way to do this, so any locking done will be on the Java side.  This is a consequence of being rather low-level.
+* No locking of the serial port - There's no portable way to do this, so any locking done will be on the Java side.  This is a consequence of being rather simple, and as such it not a primary focus of the library.
 * ???
