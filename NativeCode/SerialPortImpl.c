@@ -1174,6 +1174,10 @@ JNIEXPORT jint JNICALL Java_com_rm5248_serial_SerialPort_getSerialLineStateInter
 #else
 		int get_val;
 		if( ioctl( desc->port, TIOCMGET, &get_val ) < 0 ){
+			/* TIOCMGET can fail on linux if not implemented(example: pty) */
+			if( errno == EINVAL ){
+				return 0;
+			}
 			throw_io_exception( env, errno );
 			return -1;
 		}
