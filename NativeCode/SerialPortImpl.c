@@ -604,6 +604,7 @@ JNIEXPORT jint JNICALL Java_com_rm5248_serial_SerialPort_openPort
 				(*env)->ExceptionClear( env );
 				exception_class = (*env)->FindClass(env, "com/rm5248/serial/NotASerialPortException");
 				(*env)->ThrowNew(env, exception_class, "You are attempting to open something which is not a serial port" );
+				close( new_port->port );
 				free( new_port );
 				return -1;
 			}
@@ -616,6 +617,12 @@ JNIEXPORT jint JNICALL Java_com_rm5248_serial_SerialPort_openPort
 	//Set the baud rate
 	if( set_baud_rate( new_port, baudRate ) < 0 ){
 			throw_io_exception_message( env, "Unable to set baud rate" );
+#ifdef _WIN32
+			ReleaseMutex( new_port->in_use );
+			CloseHandle( new_port->in_use );
+#endif
+			close( new_port->port );
+			free( new_port );
 			return 0;
 	}
 	set_raw_input( new_port );
