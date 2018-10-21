@@ -1357,6 +1357,7 @@ JNIEXPORT jint JNICALL Java_com_rm5248_serial_SerialInputStream_readByte
 		
 	if( ret & EV_RXCHAR ){
 		if( !ReadFile( desc->port, &ret_val, 1, &stat, &overlap) ){
+			log_message( MESSAGE_TRACE, env, "read file failed" );
 			throw_io_exception( env, GetLastError() );
 			ReleaseMutex( desc->in_use );
 			return -1;
@@ -1372,7 +1373,16 @@ JNIEXPORT jint JNICALL Java_com_rm5248_serial_SerialInputStream_readByte
 	
 	//Always get the com lines no matter what	
 	if( GetCommModemStatus( desc->port, &get_val ) == 0 ){
-		throw_io_exception( env, GetLastError() );
+		DWORD last_error = GetLastError();
+		log_message( MESSAGE_TRACE, env, "can't get modem" );
+		if( last_error != ERROR_SUCCESS ){
+			// ERROR_SUCCESS can happen if we are connected to a USBSERIAL device and it is removed
+			// Any other error we should throw an IO exception; if ERROR_SUCCESS assume port has been closed
+			throw_io_exception( env, last_error );
+		}
+
+		//Clear the validity bit
+		ret_val &= ~(0x01 << 15);
 		return -1;
 	}
 		
@@ -1627,6 +1637,7 @@ JNIEXPORT jint JNICALL Java_com_rm5248_serial_SimpleSerialInputStream_readByte
 		
 	if( ret & EV_RXCHAR ){
 		if( !ReadFile( desc->port, &ret_val, 1, &stat, &overlap) ){
+			log_message( MESSAGE_TRACE, env, "read file failed" );
 			throw_io_exception( env, GetLastError() );
 			ReleaseMutex( desc->in_use );
 			return -1;
@@ -1636,6 +1647,7 @@ JNIEXPORT jint JNICALL Java_com_rm5248_serial_SimpleSerialInputStream_readByte
 		ret_val = -1;
 	}else if( ret == 0 ){
 		//some unknown error occured
+		log_message( MESSAGE_TRACE, env, "unknown error" );
 		throw_io_exception( env, GetLastError() );
 		ret_val = -1;
 	}
