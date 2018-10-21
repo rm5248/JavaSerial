@@ -617,6 +617,10 @@ JNIEXPORT jint JNICALL Java_com_rm5248_serial_SerialPort_openPort
 	//Set the baud rate
 	if( set_baud_rate( new_port, baudRate ) < 0 ){
 			throw_io_exception_message( env, "Unable to set baud rate" );
+#ifdef _WIN32
+			ReleaseMutex( desc->in_use );
+			CloseHandle( desc->in_use );
+#endif
 			close( new_port->port );
 			free( new_port );
 			return 0;
