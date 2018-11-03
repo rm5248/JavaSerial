@@ -198,6 +198,12 @@ static jboolean get_bool( JNIEnv* env, jobject obj, const char* name ){
 static int set_baud_rate( struct port_descriptor* desc, int baud_rate ){
 	GET_SERIAL_PORT_STRUCT( desc->port, newio );
 
+#ifdef _WIN32
+	// This seems to help a lot with sudden removal of USB serial ports.
+	// see: https://github.com/dotnet/corefx/issues/17396
+	newio.fAbortOnError = 0;
+#endif
+
 	switch( baud_rate ){
 #ifndef _WIN32
 /* Note that Windows only supports speeds of 110 and above */
@@ -1381,6 +1387,7 @@ JNIEXPORT jint JNICALL Java_com_rm5248_serial_SerialInputStream_readByte
 			throw_io_exception( env, last_error );
 		}
 
+		ReleaseMutex(desc->in_use);
 		//Clear the validity bit
 		ret_val &= ~(0x01 << 15);
 		return -1;
@@ -1833,7 +1840,7 @@ JNIEXPORT jint JNICALL Java_com_rm5248_serial_SerialPort_getMajorNativeVersion
  */
 JNIEXPORT jint JNICALL Java_com_rm5248_serial_SerialPort_getMinorNativeVersion
   (JNIEnv * env, jclass cls){
-	return 10;
+	return 11;
 }
 
 /*
