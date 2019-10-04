@@ -4,7 +4,7 @@
     <artifactId>JavaSerial</artifactId>
     <version>0.11-SNAPSHOT</version>
     <description>A cross-platform way of accessing serial ports through Java.  Supports Windows and Linux.  Does not use the Java SerialAPI.  Implementation uses the java.io API.</description>
-  
+
     <distributionManagement>
         <snapshotRepository>
             <id>ossrh</id>
@@ -15,11 +15,11 @@
             <url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
         </repository>
     </distributionManagement>
-    
+
     <profiles>
         <profile>
             <id>releaseProfile</id>
-    
+
             <build>
                 <plugins>
                     <plugin>
@@ -33,11 +33,11 @@
                             <autoReleaseAfterClose>true</autoReleaseAfterClose>
                         </configuration>
                     </plugin>
-            
+
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-gpg-plugin</artifactId>
-                        <version>1.5</version>
+                        <version>1.6</version>
                         <executions>
                             <execution>
                                 <id>sign-artifacts</id>
@@ -56,13 +56,13 @@
 
     <build>
         <sourceDirectory>src</sourceDirectory>
- 
+
         <plugins>
 
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-source-plugin</artifactId>
-                <version>2.2.1</version>
+                <version>3.0.1</version>
                 <executions>
                     <execution>
                         <id>attach-sources</id>
@@ -75,7 +75,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-javadoc-plugin</artifactId>
-                <version>2.9.1</version>
+                <version>3.0.1</version>
                 <executions>
                     <execution>
                         <id>attach-javadocs</id>
@@ -84,11 +84,14 @@
                         </goals>
                     </execution>
                 </executions>
+                <configuration>
+                    <additionalparam>-Xdoclint:none</additionalparam>
+                </configuration>
             </plugin>
 
             <plugin>
                 <artifactId>maven-compiler-plugin</artifactId>
-                <version>3.3</version>
+                <version>3.8.0</version>
                 <configuration>
                     <source>1.7</source>
                     <target>1.7</target>
@@ -97,7 +100,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-release-plugin</artifactId>
-                <version>2.5</version>
+                <version>2.5.3</version>
                 <configuration>
                     <autoVersionSubmodules>true</autoVersionSubmodules>
                     <useReleaseProfile>false</useReleaseProfile>
@@ -105,16 +108,8 @@
                     <goals>deploy</goals>
                 </configuration>
             </plugin>
-            
-            <plugin>
-              <groupId>org.apache.maven.plugins</groupId>
-              <artifactId>maven-javadoc-plugin</artifactId>
-              <configuration>
-                <additionalparam>-Xdoclint:none</additionalparam>
-              </configuration>
-            </plugin>
         </plugins>
-        
+
         <resources>
             <resource>
                 <directory>NativeCode</directory>
@@ -126,10 +121,10 @@
             </resource>
         </resources>
     </build>
-  
+
     <url>http://programming.rm5248.com/</url>
     <name>Java Serial</name>
-    
+
     <licenses>
         <license>
             <name>Apache License, Version 2.0</name>
@@ -137,18 +132,18 @@
             <distribution>repo</distribution>
         </license>
     </licenses>
-    
+
     <scm>
         <url>https://github.com/rm5248/JavaSerial</url>
         <connection>scm:git:https://github.com/rm5248/JavaSerial.git</connection>
         <developerConnection>scm:git:git@github.com:rm5248/JavaSerial.git</developerConnection>
         <tag>HEAD</tag>
     </scm>
-    
+
     <issueManagement>
         <url>https://github.com/rm5248/JavaSerial/issues</url>
     </issueManagement>
-    
+
     <developers>
         <developer>
             <email>robert.middleton@rm5248.com</email>
