@@ -246,13 +246,13 @@ public class SerialPort implements AutoCloseable {
         DATABITS_7(7),
         DATABITS_8(8)
         ;
-        
+
         private final int m_dataBits;
-        
+
         DataBits( int dataBits ){
             m_dataBits = dataBits;
         }
-        
+
         public int getDataBits(){
             return m_dataBits;
         }
@@ -265,13 +265,13 @@ public class SerialPort implements AutoCloseable {
         STOPBITS_1(1),
         STOPBITS_2(2)
         ;
-        
+
         private final int m_stopBits;
-        
+
         StopBits( int stopBits ){
             m_stopBits = stopBits;
         }
-        
+
         public int getStopBits(){
             return m_stopBits;
         }
@@ -285,13 +285,13 @@ public class SerialPort implements AutoCloseable {
         ODD(1),
         EVEN(2)
         ;
-        
+
         private final int m_parity;
-        
+
         Parity( int parity ){
             m_parity = parity;
         }
-        
+
         public int getParity(){
             return m_parity;
         }
@@ -305,13 +305,13 @@ public class SerialPort implements AutoCloseable {
         HARDWARE(1),
         SOFTWARE(2)
         ;
-        
+
         private final int m_flowControl;
-        
+
         FlowControl( int flowControl ){
             m_flowControl = flowControl;
         }
-        
+
         public int getFlowControl(){
             return m_flowControl;
         }
@@ -386,6 +386,26 @@ public class SerialPort implements AutoCloseable {
     private boolean throwIOExceptionOnInterrupt;
 
     /**
+     * Open the specified port, using parameters from the given builder.
+     *
+     * @param builder The builder to construct the SerialPort from.
+     * @throws NoSuchPortException If this port does not exist
+     * @throws NotASerialPortException If the specified port is not a serial
+     * port
+     * @throws IOException if a low-level error occurs
+     */
+    public SerialPort( SerialPortBuilder builder )
+            throws NoSuchPortException, NotASerialPortException, IOException {
+        doOpenSerialPort( builder.portName,
+                builder.baudRate,
+                builder.dataBits,
+                builder.stopBits,
+                builder.parity,
+                builder.flowControl,
+                builder.controlFlags );
+    }
+
+    /**
      * Open the specified port, 9600 baud, 8 data bits, 1 stop bit, no parity,
      * no flow control, not ignoring control lines
      *
@@ -395,7 +415,7 @@ public class SerialPort implements AutoCloseable {
      * port
      * @throws IOException if a low-level error occurs
      */
-    public SerialPort(String portName) 
+    public SerialPort(String portName)
             throws NoSuchPortException, NotASerialPortException, IOException{
         this( portName, ALL_CONTROL_LINES );
     }
@@ -412,7 +432,7 @@ public class SerialPort implements AutoCloseable {
      * port
      * @throws IOException if a low-level error occurs
      */
-    public SerialPort(String portName, int controlLineFlags) 
+    public SerialPort(String portName, int controlLineFlags)
             throws NoSuchPortException, NotASerialPortException, IOException{
         this( portName, BaudRate.B9600, controlLineFlags );
     }
@@ -429,7 +449,7 @@ public class SerialPort implements AutoCloseable {
      * @throws NotASerialPortException If the port is not in fact a serial port
      * @throws IOException if a low-level error occurs
      */
-    public SerialPort(String portName, boolean keepSettings) 
+    public SerialPort(String portName, boolean keepSettings)
             throws NoSuchPortException, NotASerialPortException, IOException {
         this( portName, keepSettings, ALL_CONTROL_LINES );
     }
@@ -449,7 +469,7 @@ public class SerialPort implements AutoCloseable {
      * @throws NotASerialPortException If the port is not in fact a serial port
      * @throws IOException if a low-level error occurs
      */
-    public SerialPort(String portName, boolean keepSettings, int controlFlags) 
+    public SerialPort(String portName, boolean keepSettings, int controlFlags)
             throws NoSuchPortException, NotASerialPortException, IOException{
         if( portName == null ){
             throw new IllegalArgumentException( "portName must not be null" );
@@ -740,11 +760,11 @@ public class SerialPort implements AutoCloseable {
         closed = false;
         this.controlLineFlags = controlFlags;
 
-        handle = openPort( portName, 
-                rate.getBaudRate(), 
-                data.getDataBits(), 
-                stop.getStopBits(), 
-                parity.getParity(), 
+        handle = openPort( portName,
+                rate.getBaudRate(),
+                data.getDataBits(),
+                stop.getStopBits(),
+                parity.getParity(),
                 flow.getFlowControl() );
         if( controlLineFlags == NO_CONTROL_LINE_CHANGE ){
             logger.log( Level.FINE, "Creating a new SimpleSerialInputStream - not monitoring for control line change" );
@@ -1028,7 +1048,7 @@ public class SerialPort implements AutoCloseable {
         }
 
         dataBits = getCharSizeInternal();
-        
+
         for( DataBits d : DataBits.values() ){
             if( dataBits == d.getDataBits() ){
                 return d;
@@ -1057,8 +1077,8 @@ public class SerialPort implements AutoCloseable {
                 return sb;
             }
         }
-        
-        
+
+
         return StopBits.STOPBITS_1;
     }
 
@@ -1081,7 +1101,7 @@ public class SerialPort implements AutoCloseable {
                 return par;
             }
         }
-        
+
         return Parity.NONE;
     }
 
@@ -1104,7 +1124,7 @@ public class SerialPort implements AutoCloseable {
                 return control;
             }
         }
-        
+
         return FlowControl.NONE;
     }
 
@@ -1118,7 +1138,7 @@ public class SerialPort implements AutoCloseable {
         if( closed ){
             throw new IllegalStateException( "Cannot set flow once the port has been closed." );
         }
-        
+
         setFlowControl( flow.getFlowControl() );
     }
 
@@ -1206,7 +1226,7 @@ public class SerialPort implements AutoCloseable {
      * @param portName
      * @return
      */
-    private native int openPort(String portName, int baudRate, int dataBits, int stopBits, int parity, int flowControl) 
+    private native int openPort(String portName, int baudRate, int dataBits, int stopBits, int parity, int flowControl)
             throws NoSuchPortException, NotASerialPortException, IOException;
 
     /**
@@ -1216,7 +1236,7 @@ public class SerialPort implements AutoCloseable {
      * @param portName The port to open
      * @return
      */
-    private native int openPort(String portName) 
+    private native int openPort(String portName)
             throws NoSuchPortException, NotASerialPortException, IOException;
 
     /**
