@@ -28,42 +28,42 @@ public class SerialPortBuilder {
         controlFlags = SerialPort.ALL_CONTROL_LINES;
     }
 
-    SerialPortBuilder setPort( String portName ){
+    public SerialPortBuilder setPort( String portName ){
         this.portName = portName;
         return this;
     }
 
-    SerialPortBuilder setBaudRate( SerialPort.BaudRate baudRate ){
+    public SerialPortBuilder setBaudRate( SerialPort.BaudRate baudRate ){
         this.baudRate = baudRate;
         return this;
     }
 
-    SerialPortBuilder setDataBits( SerialPort.DataBits dataBits ){
+    public SerialPortBuilder setDataBits( SerialPort.DataBits dataBits ){
         this.dataBits = dataBits;
         return this;
     }
 
-    SerialPortBuilder setFlowControl( SerialPort.FlowControl flowControl ){
+    public SerialPortBuilder setFlowControl( SerialPort.FlowControl flowControl ){
         this.flowControl = flowControl;
         return this;
     }
 
-    SerialPortBuilder setParity( SerialPort.Parity parity ){
+    public SerialPortBuilder setParity( SerialPort.Parity parity ){
         this.parity = parity;
         return this;
     }
 
-    SerialPortBuilder setStopBits( SerialPort.StopBits stopBits ){
+    public SerialPortBuilder setStopBits( SerialPort.StopBits stopBits ){
         this.stopBits = stopBits;
         return this;
     }
 
-    SerialPortBuilder setControlFlags( int controlFlags ){
+    public SerialPortBuilder setControlFlags( int controlFlags ){
         this.controlFlags = controlFlags;
         return this;
     }
 
-    SerialPort build() throws NoSuchPortException, NotASerialPortException, IOException {
+    public SerialPort build() throws NoSuchPortException, NotASerialPortException, IOException {
         return new SerialPort( this );
     }
 }
