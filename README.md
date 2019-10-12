@@ -22,7 +22,7 @@ The easiest way is to use [Apache Maven]( http://maven.apache.org/ ), and add it
 <dependency>
     <groupId>com.rm5248</groupId>
     <artifactId>JavaSerial</artifactId>
-    <version>0.9</version>
+    <version>0.11</version>
 </dependency>
 ```
 However, you may also download the JARs and add them manually to your project if you so desire.  The latest versions may be downloaded [here]( http://programming.rm5248.com/releases/JavaSerial/latest/ ).  No other dependencies are required.
@@ -59,6 +59,35 @@ If you don't need to know about the serial lines at all, open up the serial port
 new SerialPort( "/dev/ttyUSB0", SerialPort.NO_CONTROL_LINE_CHANGE );
 ```
 Otherwise a new thread will be created for each serial port that is opened.
+
+As of version 0.11, you can also use the new `SerialPortBuilder` class to easily set settings and create a serial port:
+
+```java
+import com.rm5248.serial.NoSuchPortException;
+import com.rm5248.serial.NotASerialPortException;
+import com.rm5248.serial.SerialPort;
+import com.rm5248.serial.SerialPortBuilder;
+ 
+public class SerialTest {
+ 
+    public static void main(String[] args) {
+        try {
+            SerialPort s = new SerialPortBuilder()
+                .setPort( "/dev/ttyUSB0" )
+                .setBaudRate( SerialPort.BaudRate.B4800 )
+                .build();
+        } catch (NoSuchPortException e) {
+            System.err.println( "Oh no!  That port doesn't exist!" );
+        } catch (NotASerialPortException e) {
+            System.err.println( "Oh no!  That's not a serial port!" );
+        } catch (IOException e) {
+            System.err.println( "An IOException occured" );
+        }
+ 
+    }
+ 
+}
+```
 
 ## JNI and Environment Variables
 All of the JNI code is extracted from the JAR file and loaded at run-time, so there is no fiddling of libraries that has to be done.  If you do require special JNI code for some reason, you can set the following environment variables when starting up Java:
