@@ -1157,8 +1157,16 @@ JNIEXPORT jint JNICALL Java_com_rm5248_serial_SerialPort_getSerialLineStateInter
 	{	
 #ifdef _WIN32
 		DWORD get_val;
+		DWORD error_code;
 		if( GetCommModemStatus( desc->port, &get_val ) == 0 ){
-			throw_io_exception( env, GetLastError() );
+			error_code = GetLastError();
+			if( error_code == ERROR_INVALID_PARAMETER ){
+				/* This can happen if the serial port does not support the control lines
+				 * Example: u-blox GPS receiver.
+				 */
+				return 0;
+			}
+			throw_io_exception( env, error_code );
 			return -1;
 		}
 		
