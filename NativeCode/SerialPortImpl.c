@@ -1364,25 +1364,36 @@ JNIEXPORT jint JNICALL Java_com_rm5248_serial_SerialInputStream_readByte
 		SetCommMask( desc->port, EV_RXCHAR | EV_CTS | EV_DSR | EV_RING );
 		WaitCommEvent( desc->port, &ret, &overlap );
 		WaitForSingleObject( overlap.hEvent, INFINITE );
+                CloseHandle( overlap.hEvent );
 	}else{
 		//Data is available; set the RXCHAR mask so we try to read from the port
 		ret = EV_RXCHAR;
 	}
 		
 	if( ret & EV_RXCHAR ){
+                overlap.hEvent = CreateEvent( 0, TRUE, 0, 0 );
 		if( !ReadFile( desc->port, &ret_val, 1, &stat, &overlap) ){
-			log_message( MESSAGE_TRACE, env, "read file failed" );
-			throw_io_exception( env, GetLastError() );
-			ReleaseMutex( desc->in_use );
-			return -1;
-		}
-		
-		//This is a valid byte, set our valid bit
-		ret_val |= ( 0x01 << 15 );
+                    if( GetLastError() == ERROR_IO_PENDING ){
+                        //Probably not an error, we're just doing this in an async fasion
+                        if( WaitForSingleObject( overlap.hEvent, INFINITE ) == WAIT_FAILED ){
+                            log_message( MESSAGE_TRACE, env, "WaitForSingleObject failed" );
+                            throw_io_exception( env, GetLastError() );
+                            ret_val = -1;
+                            goto err_out;
+                        }
+                    }else{
+                        log_message( MESSAGE_TRACE, env, "read file failed" );
+                        throw_io_exception( env, GetLastError() );
+                        ret_val = -1;
+                        goto err_out;
+                    }
+                }
+
+                //This is a valid byte, set our valid bit
+                ret_val |= ( 0x01 << 15 );
 	}else if( ret == 0 && desc->port == INVALID_HANDLE_VALUE ){
-		//the port was closed
-		ReleaseMutex( desc->in_use );
-		return -1;
+		ret_val = -1;
+                goto err_out;
 	}
 	
 	//Always get the com lines no matter what	
@@ -1395,10 +1406,9 @@ JNIEXPORT jint JNICALL Java_com_rm5248_serial_SerialInputStream_readByte
 			throw_io_exception( env, last_error );
 		}
 
-		ReleaseMutex(desc->in_use);
 		//Clear the validity bit
 		ret_val &= ~(0x01 << 15);
-		return -1;
+                goto err_out;
 	}
 		
 	if( get_val & MS_CTS_ON ){
@@ -1424,8 +1434,11 @@ JNIEXPORT jint JNICALL Java_com_rm5248_serial_SerialInputStream_readByte
 		ret_val |= ( 0x01 << 14 );
 	}
 	
+err_out:
 	ReleaseMutex( desc->in_use );
-	
+        CloseHandle( overlap.hEvent );
+
+        return ret_val;
 #else
 
 	//Okay, this here is going to be a bit ugly.
@@ -1556,9 +1569,10 @@ JNIEXPORT jint JNICALL Java_com_rm5248_serial_SerialInputStream_readByte
 	}
 	
 	pthread_mutex_unlock( &(desc->in_use) );
-#endif
 
 	return ret_val;
+#endif
+
 }
 
 /*
@@ -1645,18 +1659,28 @@ JNIEXPORT jint JNICALL Java_com_rm5248_serial_SimpleSerialInputStream_readByte
 		SetCommMask( desc->port, EV_RXCHAR );
 		WaitCommEvent( desc->port, &ret, &overlap );
 		WaitForSingleObject( overlap.hEvent, INFINITE );
+                CloseHandle( overlap.hEvent );
 	}else{
 		//Data is available; set the RXCHAR mask so we try to read from the port
 		ret = EV_RXCHAR;
 	}
 		
 	if( ret & EV_RXCHAR ){
-		if( !ReadFile( desc->port, &ret_val, 1, &stat, &overlap) ){
-			log_message( MESSAGE_TRACE, env, "read file failed" );
-			throw_io_exception( env, GetLastError() );
-			ReleaseMutex( desc->in_use );
-			return -1;
-		}
+            overlap.hEvent = CreateEvent( 0, TRUE, 0, 0 );
+            if( !ReadFile( desc->port, &ret_val, 1, &stat, &overlap) ){
+                if( GetLastError() == ERROR_IO_PENDING ){
+                    //Probably not an error, we're just doing this in an async fasion
+                    if( WaitForSingleObject( overlap.hEvent, INFINITE ) == WAIT_FAILED ){
+                            log_message( MESSAGE_TRACE, env, "WaitForSingleObject failed" );
+                            throw_io_exception( env, GetLastError() );
+                            ret_val = -1;
+                    }
+                }else{
+                    log_message( MESSAGE_TRACE, env, "read file failed" );
+                    throw_io_exception( env, GetLastError() );
+                    ret_val = -1;
+                }
+            }
 	}else if( ret == 0 && desc->port == INVALID_HANDLE_VALUE ){
 		//the port was closed
 		ret_val = -1;
@@ -1666,7 +1690,8 @@ JNIEXPORT jint JNICALL Java_com_rm5248_serial_SimpleSerialInputStream_readByte
 		throw_io_exception( env, GetLastError() );
 		ret_val = -1;
 	}
-	
+
+        CloseHandle( overlap.hEvent );
 	ReleaseMutex( desc->in_use );
 #else
 	pthread_mutex_lock( &(desc->in_use) );
@@ -1702,6 +1727,7 @@ JNIEXPORT jint JNICALL Java_com_rm5248_serial_SimpleSerialInputStream_readByte
 	}
 	pthread_mutex_unlock( &(desc->in_use) );
 #endif
+
 	return ret_val;
 }
 
@@ -1728,7 +1754,7 @@ JNIEXPORT void JNICALL Java_com_rm5248_serial_SerialOutputStream_writeByte
 	char byte_write;
 #ifdef _WIN32
 	DWORD bytes_written;
-	OVERLAPPED overlap;
+	OVERLAPPED overlap = { 0 };
 #else
 	int bytes_written;
 #endif
@@ -1741,20 +1767,18 @@ JNIEXPORT void JNICALL Java_com_rm5248_serial_SerialOutputStream_writeByte
 	}
 
 #ifdef _WIN32
-	memset( &overlap, 0, sizeof( overlap ) );
 	overlap.hEvent = CreateEvent( 0, TRUE, 0, 0 );
 	if( !WriteFile( desc->port, &byte_write, sizeof( byte_write ), &bytes_written, &overlap ) ){
 		if( GetLastError() == ERROR_IO_PENDING ){
 			//Probably not an error, we're just doing this in an async fasion
 			if( WaitForSingleObject( overlap.hEvent, INFINITE ) == WAIT_FAILED ){
 				throw_io_exception( env, GetLastError() );
-				return;
 			}
 		}else{
 			throw_io_exception( env, GetLastError() );
-			return;
 		}
 	}
+        CloseHandle( overlap.hEvent );
 #else
 	bytes_written = write( desc->port, &byte_write, sizeof( byte_write ) );
 	if( bytes_written < 0 || 
@@ -1778,7 +1802,7 @@ JNIEXPORT void JNICALL Java_com_rm5248_serial_SerialOutputStream_writeByteArray
 	struct port_descriptor* desc;
 #ifdef _WIN32
 	DWORD bytes_written;
-	OVERLAPPED overlap;
+	OVERLAPPED overlap = { 0 };
 #else
 	int bytes_written = 0;
 	int offset = 0;
@@ -1794,20 +1818,18 @@ JNIEXPORT void JNICALL Java_com_rm5248_serial_SerialOutputStream_writeByteArray
 	data = (*env)->GetByteArrayElements(env, arr, 0);
 
 #ifdef _WIN32
-	memset( &overlap, 0, sizeof( overlap ) );
 	overlap.hEvent = CreateEvent( 0, TRUE, 0, 0 );
 	if( !WriteFile( desc->port, data, len, &bytes_written, &overlap ) ){
 		if( GetLastError() == ERROR_IO_PENDING ){
 			//Probably not an error, we're just doing this in an async fasion
 			if( WaitForSingleObject( overlap.hEvent, INFINITE ) == WAIT_FAILED ){
 				throw_io_exception( env, GetLastError() );
-				return;
 			}
 		}else{
 			throw_io_exception( env, GetLastError() );
 		}
 	}
-	
+	CloseHandle( overlap.hEvent );
 #else
 
 	do{
@@ -1848,7 +1870,7 @@ JNIEXPORT jint JNICALL Java_com_rm5248_serial_SerialPort_getMajorNativeVersion
  */
 JNIEXPORT jint JNICALL Java_com_rm5248_serial_SerialPort_getMinorNativeVersion
   (JNIEnv * env, jclass cls){
-	return 11;
+	return 12;
 }
 
 /*
