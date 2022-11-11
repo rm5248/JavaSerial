@@ -44,44 +44,44 @@ jobs:
        name: linux-x86
        path: main/build-x86/libjavaserial.so
 
-  win:
-    name: JavaSerial-native-Windows
-    runs-on: windows-latest
-    steps:
-    - uses: actions/checkout@v3
-      with:
-        path: main
-
-    - name: 'Run CMake - amd64'
-      run: |
-        $THISDIR=Get-Location
-        cd main
-        mkdir build-64
-        cd build-64
-        cmake -A x64 ../NativeCode
-        cmake --config Release --build .
-
-    - name: 'Run CMake - x86'
-      run: |
-        $THISDIR=Get-Location
-        cd main
-        mkdir build-86
-        cd build-86
-        cmake -A Win32 ../NativeCode
-        cmake --config Release --build .
-     
-  osx:
-    name: JavaSerial-native-OSX
-    runs-on: macos-latest
-    steps:
-    - uses: actions/checkout@v3
-      with:
-        path: main
-
-    - name: 'Run CMake - amd64'
-      run: |
-        cd main
-        mkdir build-amd64
-        cd build-amd64
-        cmake -DCMAKE_BUILD_TYPE=Release ../NativeCode
-        make
+#  win:
+#    name: JavaSerial-native-Windows
+#    runs-on: windows-latest
+#    steps:
+#    - uses: actions/checkout@v3
+#      with:
+#        path: main
+#
+#    - name: 'Run CMake - amd64'
+#     run: |
+#        $THISDIR=Get-Location
+#        cd main
+#        mkdir build-64
+#        cd build-64
+#        cmake -A x64 ../NativeCode
+#        cmake --config Release --build .
+#
+#    - name: 'Run CMake - x86'
+#      run: |
+#        $THISDIR=Get-Location
+#        cd main
+#        mkdir build-86
+#        cd build-86
+#        cmake -A Win32 ../NativeCode
+#        cmake --config Release --build .
+#     
+#  osx:
+#    name: JavaSerial-native-OSX
+#    runs-on: macos-latest
+#    steps:
+#    - uses: actions/checkout@v3
+#      with:
+#        path: main
+#
+#    - name: 'Run CMake - amd64'
+#      run: |
+#        cd main
+#        mkdir build-amd64
+#        cd build-amd64
+#        cmake -DCMAKE_BUILD_TYPE=Release ../NativeCode
+#        make
