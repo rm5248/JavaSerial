@@ -19,8 +19,8 @@ unzip linux-arm64.zip && mv libjavaserial.so Linux/aarch64
 unzip linux-armhf.zip && mv libjavaserial.so Linux/arm
 unzip linux-x86.zip && mv libjavaserial.so Linux/i386
 
-unzip osx-amd64.zip && mv libjavaserial.dylib Mac/amd64
-unzip osx-arm64.zip && mv libjavaserial.dylib Mac/aarch64
+unzip osx-amd64.zip && mv libjavaserial.dylib Mac/amd64/libjavaserial.jnilib
+unzip osx-arm64.zip && mv libjavaserial.dylib Mac/aarch64/libjavaserial.jnilib
 
 unzip win-amd64.zip && mv javaserial.dll Windows/amd64
 unzip win-x86.zip && mv javaserial.dll Windows/x86
