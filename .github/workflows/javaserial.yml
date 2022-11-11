@@ -15,7 +15,7 @@ jobs:
     - name: 'Install dependencies'
       run: |
         sudo apt-get update
-        sudo apt-get install -y default-jdk arm-linux-gnueabi-gcc
+        sudo apt-get install -y default-jdk
 
     - name: 'Run CMake - amd64'
       run: |
