@@ -6,6 +6,7 @@ jobs:
   linux:
     name: JavaSerial-native-linux
     runs-on: ubuntu-latest
+    timeout-minutes: 38
     steps:
     - uses: actions/checkout@v3
       with:
@@ -32,44 +33,44 @@ jobs:
         JAVA_HOME=/usr/lib/jvm/default-java cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_C_FLAGS=-m32 ../NativeCode
         make
         
-   - uses: actions/upload-artifact@v3
-     if: success()
-     with:
-       name: linux-amd64
-       path: main/build-amd64/libjavaserial.so
+    - uses: actions/upload-artifact@v3
+      if: success()
+      with:
+        name: linux-amd64
+        path: main/build-amd64/libjavaserial.so
 
-   - uses: actions/upload-artifact@v3
-     if: success()
-     with:
-       name: linux-x86
-       path: main/build-x86/libjavaserial.so
+    - uses: actions/upload-artifact@v3
+      if: success()
+      with:
+        name: linux-x86
+        path: main/build-x86/libjavaserial.so
 
-#  win:
-#    name: JavaSerial-native-Windows
-#    runs-on: windows-latest
-#    steps:
-#    - uses: actions/checkout@v3
-#      with:
-#        path: main
-#
-#    - name: 'Run CMake - amd64'
-#     run: |
-#        $THISDIR=Get-Location
-#        cd main
-#        mkdir build-64
-#        cd build-64
-#        cmake -A x64 ../NativeCode
-#        cmake --config Release --build .
-#
-#    - name: 'Run CMake - x86'
-#      run: |
-#        $THISDIR=Get-Location
-#        cd main
-#        mkdir build-86
-#        cd build-86
-#        cmake -A Win32 ../NativeCode
-#        cmake --config Release --build .
-#     
+  win:
+    name: JavaSerial-native-Windows
+    runs-on: windows-latest
+    steps:
+    - uses: actions/checkout@v3
+      with:
+        path: main
+
+    - name: 'Run CMake - amd64'
+     run: |
+        $THISDIR=Get-Location
+        cd main
+        mkdir build-64
+        cd build-64
+        cmake -A x64 ../NativeCode
+        cmake --config Release --build .
+
+    - name: 'Run CMake - x86'
+      run: |
+        $THISDIR=Get-Location
+        cd main
+        mkdir build-86
+        cd build-86
+        cmake -A Win32 ../NativeCode
+        cmake --config Release --build .
+     
 #  osx:
 #    name: JavaSerial-native-OSX
 #    runs-on: macos-latest
