@@ -222,6 +222,8 @@ public class SerialPort implements AutoCloseable {
         B9600(9600),
         B19200(19200),
         B38400(38400),
+        /** May not be available on all platforms */
+        B57600(57600),
         B115200(115200)
         ;
 
