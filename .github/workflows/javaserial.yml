@@ -46,6 +46,62 @@ jobs:
         name: linux-x86
         path: main/build-x86/libjavaserial.so
 
+  linux-armhf:
+    name: JavaSerial-native-linux-armhf
+    runs-on: ubuntu-latest
+    timeout-minutes: 38
+    steps:
+    - uses: actions/checkout@v3
+      with:
+        path: main
+
+    - name: 'Install dependencies'
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y default-jdk gcc-arm-linux-gnueabihf
+
+    - name: 'Run CMake - armhf'
+      run: |
+        cd main
+        mkdir build-armhf
+        cd build-armhf
+        JAVA_HOME=/usr/lib/jvm/default-java cmake -DCMAKE_C_COMPILER=arm-linux-gnueabihf-gcc -DCMAKE_BUILD_TYPE=Release ../NativeCode
+        make
+
+    - uses: actions/upload-artifact@v3
+      if: success()
+      with:
+        name: linux-armhf
+        path: main/build-armhf/libjavaserial.so
+
+  linux-arm64:
+    name: JavaSerial-native-linux-arm64
+    runs-on: ubuntu-latest
+    timeout-minutes: 38
+    steps:
+    - uses: actions/checkout@v3
+      with:
+        path: main
+
+    - name: 'Install dependencies'
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y default-jdk gcc-aarch64-linux-gnu
+
+    - name: 'Run CMake - arm64'
+      run: |
+        cd main
+        mkdir build-arm4
+        cd build-arm64
+        JAVA_HOME=/usr/lib/jvm/default-java cmake -DCMAKE_C_COMPILER=aarch64-linux-gnueabihf-gcc -DCMAKE_BUILD_TYPE=Release ../NativeCode
+        make
+
+    - uses: actions/upload-artifact@v3
+      if: success()
+      with:
+        name: linux-arm64
+        path: main/build-arm64/libjavaserial.so
+
   win:
     name: JavaSerial-native-Windows
     runs-on: windows-latest
