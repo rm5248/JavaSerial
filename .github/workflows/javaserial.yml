@@ -1,0 +1,107 @@
+name: JavaSerial
+
+on: [push, pull_request]
+
+jobs:
+  linux:
+    name: JavaSerial-native-linux
+    runs-on: ubuntu-latest
+    timeout-minutes: 38
+    steps:
+    - uses: actions/checkout@v3
+      with:
+        path: main
+
+    - name: 'Install dependencies'
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y default-jdk gcc-multilib
+        #sudo apt-get install -y default-jdk gcc-multilib gcc-arm-linux-gnueabihf gcc-aarch64-linux-gnu
+
+    - name: 'Run CMake - amd64'
+      run: |
+        cd main
+        mkdir build-amd64
+        cd build-amd64
+        JAVA_HOME=/usr/lib/jvm/default-java cmake -DCMAKE_BUILD_TYPE=Release ../NativeCode
+        make
+
+    - name: 'Run CMake - x86'
+      run: |
+        cd main
+        mkdir build-x86
+        cd build-x86
+        JAVA_HOME=/usr/lib/jvm/default-java cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_C_FLAGS=-m32 ../NativeCode
+        make
+        
+    - uses: actions/upload-artifact@v3
+      if: success()
+      with:
+        name: linux-amd64
+        path: main/build-amd64/libjavaserial.so
+
+    - uses: actions/upload-artifact@v3
+      if: success()
+      with:
+        name: linux-x86
+        path: main/build-x86/libjavaserial.so
+
+  win:
+    name: JavaSerial-native-Windows
+    runs-on: windows-latest
+    steps:
+    - uses: actions/checkout@v3
+      with:
+        path: main
+
+    - name: 'Run CMake - amd64'
+      run: |
+        $THISDIR=Get-Location
+        cd main
+        mkdir build-64
+        cd build-64
+        cmake -A x64 ../NativeCode
+        cmake --build . --config Release
+
+    - name: 'Run CMake - x86'
+      run: |
+        $THISDIR=Get-Location
+        cd main
+        mkdir build-86
+        cd build-86
+        cmake -A Win32 ../NativeCode
+        cmake --build . --config Release
+
+    - uses: actions/upload-artifact@v3
+      if: success()
+      with:
+        name: win-amd64
+        path: main/build-64/Release/javaserial.dll
+
+    - uses: actions/upload-artifact@v3
+      if: success()
+      with:
+        name: win-x86
+        path: main/build-86/Release/javaserial.dll
+     
+  osx:
+    name: JavaSerial-native-OSX
+    runs-on: macos-latest
+    steps:
+    - uses: actions/checkout@v3
+      with:
+        path: main
+
+    - name: 'Run CMake - amd64'
+      run: |
+        cd main
+        mkdir build-amd64
+        cd build-amd64
+        cmake -DCMAKE_BUILD_TYPE=Release ../NativeCode
+        make
+
+    - uses: actions/upload-artifact@v3
+      if: success()
+      with:
+        name: osx-amd64
+        path: main/build-amd64/libjavaserial.dylib
