@@ -76,13 +76,13 @@ jobs:
       if: success()
       with:
         name: win-amd64
-        path: main/build-64/Release/libjavaserial.dll
+        path: main/build-64/Release/javaserial.dll
 
     - uses: actions/upload-artifact@v3
       if: success()
       with:
         name: win-x86
-        path: main/build-86/Release/libjavaserial.dll
+        path: main/build-86/Release/javaserial.dll
      
   osx:
     name: JavaSerial-native-OSX
