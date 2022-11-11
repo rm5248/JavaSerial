@@ -100,8 +100,22 @@ jobs:
         cmake -DCMAKE_BUILD_TYPE=Release ../NativeCode
         make
 
+    - name: 'Run CMake - arm64'
+      run: |
+        cd main
+        mkdir build-arm64
+        cd build-arm64
+        cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_OSX_ARCHITECTURES=arm64 ../NativeCode
+        make
+
     - uses: actions/upload-artifact@v3
       if: success()
       with:
         name: osx-amd64
         path: main/build-amd64/libjavaserial.dylib
+
+    - uses: actions/upload-artifact@v3
+      if: success()
+      with:
+        name: osx-arm64
+        path: main/build-arm64/libjavaserial.dylib
