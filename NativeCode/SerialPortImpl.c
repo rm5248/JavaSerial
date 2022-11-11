@@ -230,6 +230,7 @@ static int set_baud_rate( struct port_descriptor* desc, int baud_rate ){
 		SPEED_SWITCH(9600,newio);
 		SPEED_SWITCH(19200,newio);
 		SPEED_SWITCH(38400,newio);
+		SPEED_SWITCH(57600,newio);
 		SPEED_SWITCH(115200,newio);
 	}
 
@@ -905,6 +906,7 @@ JNIEXPORT jint JNICALL Java_com_rm5248_serial_SerialPort_getBaudRateInternal
 		GET_SPEED_SWITCH( 9600, newio );
 		GET_SPEED_SWITCH( 19200, newio );
 		GET_SPEED_SWITCH( 38400, newio );
+		GET_SPEED_SWITCH( 57600, newio );
 		GET_SPEED_SWITCH( 115200, newio );
 		default:
 			return 0;
