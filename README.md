@@ -22,7 +22,7 @@ The easiest way is to use [Apache Maven]( http://maven.apache.org/ ), and add it
 <dependency>
     <groupId>com.rm5248</groupId>
     <artifactId>JavaSerial</artifactId>
-    <version>0.11</version>
+    <version>0.13</version>
 </dependency>
 ```
 However, you may also download the JARs and add them manually to your project if you so desire.  The latest versions may be downloaded [here]( http://programming.rm5248.com/releases/JavaSerial/latest/ ).  No other dependencies are required.
