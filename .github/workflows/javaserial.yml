@@ -3,7 +3,7 @@ name: JavaSerial
 on: [push, pull_request]
 
 jobs:
-  job:
+  linux:
     name: JavaSerial-native-linux
     runs-on: ubuntu-latest
     steps:
@@ -44,7 +44,7 @@ jobs:
        name: linux-x86
        path: main/build-x86/libjavaserial.so
 
-  job:
+  win:
     name: JavaSerial-native-Windows
     runs-on: windows-latest
     steps:
@@ -70,7 +70,7 @@ jobs:
         cmake -A Win32 ../NativeCode
         cmake --config Release --build .
      
-  job:
+  osx:
     name: JavaSerial-native-OSX
     runs-on: macos-latest
     steps:
